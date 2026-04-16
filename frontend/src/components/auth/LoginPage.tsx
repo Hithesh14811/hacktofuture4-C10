@@ -195,7 +195,7 @@ export default function LoginPage() {
       >
         <div className="mb-6 flex flex-col items-center">
           <Shield className="h-12 w-12 text-[#0073bb] mb-2" />
-          <h1 className="text-2xl font-bold text-[#232f3e]">Sign in to NimbusCloud</h1>
+          <h1 className="text-2xl font-bold text-[#232f3e]">Sign in to Agenticzero</h1>
           <p className="mt-2 text-center text-sm text-[#565959]">A cloud operations console with embedded identity protection.</p>
         </div>
 
