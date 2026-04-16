@@ -1,70 +1,71 @@
 {
   "usr_002": {
-    "samples": 194,
+    "samples": 242,
     "metrics": {
       "typing_speed_cpm": {
-        "mean": 0.3678036667735861,
-        "count": 194,
-        "m2": 1244.3869231095157
+        "mean": 0.3363808372328808,
+        "count": 242,
+        "m2": 1344.255903285455
       },
       "key_hold_mean_ms": {
-        "mean": 1.252302405528749,
-        "count": 194,
-        "m2": 19585.382816999845
+        "mean": 1.4208539944778376,
+        "count": 242,
+        "m2": 29581.879600467946
       },
       "key_flight_mean_ms": {
-        "mean": 2.5032474226788755,
-        "count": 194,
-        "m2": 116785.41485398426
+        "mean": 2.0067355371888502,
+        "count": 242,
+        "m2": 117026.53592093466
       },
       "mouse_velocity_mean": {
-        "mean": 0.29631493243918267,
-        "count": 194,
-        "m2": 52.53987051129633
+        "mean": 0.276029813725045,
+        "count": 242,
+        "m2": 73.12352276048924
       },
       "mouse_curve_ratio": {
-        "mean": 0.04612787775436592,
-        "count": 194,
-        "m2": 1.3058344395950383
+        "mean": 0.041120115799781184,
+        "count": 242,
+        "m2": 1.52622901783894
       },
       "scroll_distance": {
         "mean": 0.0,
-        "count": 194,
+        "count": 242,
         "m2": 0.0
       },
       "click_count": {
-        "mean": 0.5721649484536081,
-        "count": 194,
-        "m2": 539.4896907216493
+        "mean": 0.4793388429752065,
+        "count": 242,
+        "m2": 558.3966942148759
       }
     },
     "routes": {
       "/dashboard": 22,
       "/dashboard/secrets": 44,
       "/dashboard/services": 28,
-      "/dashboard/incident": 63,
+      "/dashboard/incident": 93,
       "/verify/face": 13,
-      "/dashboard/logs": 24
+      "/dashboard/logs": 42
     },
     "resources": {
       "dashboard": 37,
       "secrets": 44,
       "services": 28,
-      "iam": 62,
-      "logs": 23
+      "iam": 91,
+      "logs": 42
     },
     "hours": {
-      "0": 194
+      "0": 222,
+      "1": 20
     },
     "devices": {
-      "fp_1792042887": 194
+      "fp_1792042887": 242
     },
     "screen_profiles": {
-      "1440x900": 194
+      "1440x900": 242
     },
     "timezones": {
-      "Asia/Calcutta": 194
+      "Asia/Calcutta": 242
     },
-    "last_updated": "2026-04-17T00:54:25.166507"
+    "last_updated": "2026-04-17T01:05:25.156588"
   }
 }
