@@ -16,13 +16,13 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const isAdmin = user?.role === 'Administrator';
 
   const navItems = [
-    { icon: LayoutDashboard, label: 'Overview', path: '/dashboard' },
-    { icon: Server, label: 'Services', path: '/dashboard/services' },
-    { icon: Key, label: 'Secrets', path: '/dashboard/secrets' },
-    { icon: Network, label: 'IAM Graph', path: '/dashboard/incident', adminOnly: false },
-    { icon: AlertTriangle, label: 'Logs & Alerts', path: '/dashboard/logs', adminOnly: false },
-    { icon: FileText, label: 'Reports', path: '/dashboard/reports', adminOnly: true },
-    { icon: Settings, label: 'Admin Panel', path: '/dashboard/admin', adminOnly: true },
+    { icon: LayoutDashboard, label: 'Console Home', path: '/dashboard' },
+    { icon: Server, label: 'Compute & Apps', path: '/dashboard/services' },
+    { icon: Key, label: 'Secrets Vault', path: '/dashboard/secrets' },
+    { icon: Network, label: 'IAM Topology', path: '/dashboard/incident', adminOnly: false },
+    { icon: AlertTriangle, label: 'Events & Alerts', path: '/dashboard/logs', adminOnly: false },
+    { icon: FileText, label: 'Usage Reports', path: '/dashboard/reports', adminOnly: true },
+    { icon: Settings, label: 'Admin Control', path: '/dashboard/admin', adminOnly: true },
   ];
 
   return (
@@ -69,7 +69,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
         <div className={`flex items-center gap-3 ${collapsed ? 'justify-center' : ''}`}>
           <div className={`w-2 h-2 rounded-full bg-[#00ff88] ${collapsed ? '' : ''}`} />
           {!collapsed && (
-            <span className="text-[10px] uppercase font-bold text-[#879596]">System Operational</span>
+            <span className="text-[10px] uppercase font-bold text-[#879596]">Cloud Region Healthy</span>
           )}
         </div>
       </div>

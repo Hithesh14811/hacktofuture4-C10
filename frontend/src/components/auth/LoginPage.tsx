@@ -184,16 +184,17 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen w-full items-center justify-center bg-[#f2f3f3] text-[#11181C]">
+    <div className="flex min-h-screen w-full items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(0,115,187,0.08),_transparent_35%),linear-gradient(180deg,_#eef4fb_0%,_#f6f8fb_100%)] text-[#11181C]">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="w-full max-w-[400px] bg-white p-10 shadow-lg rounded-sm border border-[#eaeded]"
+        className="w-full max-w-[460px] bg-white p-10 shadow-[0_24px_80px_rgba(35,47,62,0.14)] rounded-xl border border-[#d7e3f0]"
       >
         <div className="mb-6 flex flex-col items-center">
-          <Shield className="h-12 w-12 text-[#232f3e] mb-2" />
-          <h1 className="text-2xl font-bold text-[#232f3e]">Sign in</h1>
+          <Shield className="h-12 w-12 text-[#0073bb] mb-2" />
+          <h1 className="text-2xl font-bold text-[#232f3e]">Sign in to NimbusCloud</h1>
+          <p className="mt-2 text-center text-sm text-[#565959]">A cloud operations console with embedded identity protection.</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -300,7 +301,7 @@ export default function LoginPage() {
 
         <div className="mt-6 border-t border-[#eaeded] pt-6 text-center">
           <p className="text-xs text-[#565959]">
-            By continuing, you agree to TrustNet's Conditions of Use and Privacy Notice.
+            Locked accounts remain locked across logout, relogin, IP changes, and location changes until an administrator unlocks them.
           </p>
         </div>
       </motion.div>

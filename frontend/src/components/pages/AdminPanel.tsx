@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { RotateCcw, Camera, Trash2, LogOut } from 'lucide-react';
+import { RotateCcw, Camera, Trash2, LogOut, Lock, LockOpen } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useTrustStore } from '../../store/trustStore';
 import { TopBar } from '../dashboard/TopBar';
@@ -58,6 +58,10 @@ export default function AdminPanel() {
     } finally {
       setBusyUserId(null);
     }
+  };
+
+  const unlockUser = async (userId: string) => {
+    await restoreAccess(userId);
   };
 
   const terminateSession = async (sessionId: string) => {
@@ -146,7 +150,7 @@ export default function AdminPanel() {
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             <div className="mb-8">
               <h2 className="text-2xl font-bold text-[#232f3e]">Identity Management Admin</h2>
-              <p className="text-sm text-[#565959]">Manage user enrollment, session trust states, and global access recovery.</p>
+              <p className="text-sm text-[#565959]">Manage user enrollment, persistent account locks, and live cloud access recovery.</p>
             </div>
 
             <div className="grid grid-cols-4 gap-6 mb-10">
@@ -175,6 +179,7 @@ export default function AdminPanel() {
                       <th className="text-left text-[#565959] text-[10px] uppercase font-bold p-4">Trust Score</th>
                       <th className="text-left text-[#565959] text-[10px] uppercase font-bold p-4">Risk Level</th>
                       <th className="text-left text-[#565959] text-[10px] uppercase font-bold p-4">Face Enrollment</th>
+                      <th className="text-left text-[#565959] text-[10px] uppercase font-bold p-4">Account Lock</th>
                       <th className="text-left text-[#565959] text-[10px] uppercase font-bold p-4">Actions</th>
                     </tr>
                   </thead>
@@ -210,7 +215,29 @@ export default function AdminPanel() {
                           </span>
                         </td>
                         <td className="p-4">
+                          <span className={`inline-flex items-center gap-1 text-[10px] font-bold uppercase px-2 py-0.5 rounded-sm ${u.account_restricted ? 'bg-[#fdf0f1] text-[#d0021b]' : 'bg-[#f2f3f3] text-[#565959]'}`}>
+                            <Lock className="h-3 w-3" />
+                            {u.account_restricted ? 'Locked' : 'Open'}
+                          </span>
+                          {u.account_restricted && (
+                            <div className="mt-1 text-[10px] text-[#d0021b]">
+                              Persists across logout, relogin, IP, and location changes.
+                            </div>
+                          )}
+                        </td>
+                        <td className="p-4">
                           <div className="flex gap-2">
+                            {u.account_restricted && (
+                              <button
+                                onClick={() => unlockUser(u.id)}
+                                className="inline-flex items-center gap-1 rounded-sm border border-[#00a86b]/30 bg-[#00ff88]/10 px-3 py-2 text-[11px] font-bold uppercase tracking-wide text-[#007a55] hover:bg-[#00ff88]/20 disabled:opacity-40"
+                                title="Unblock This User"
+                                disabled={busyUserId === u.id}
+                              >
+                                <LockOpen className="h-3.5 w-3.5" />
+                                Unblock User
+                              </button>
+                            )}
                             {u.role !== 'Administrator' && (
                               <button
                                 onClick={() => handleStartEnrollment(u)}
@@ -224,7 +251,7 @@ export default function AdminPanel() {
                             <button 
                               onClick={() => restoreAccess(u.id)}
                               className="p-2 hover:bg-[#f2f3f3] rounded-sm text-[#565959] hover:text-[#00ff88]"
-                              title="Restore Access"
+                              title={u.account_restricted ? "Restore Session State" : "Restore Access"}
                               disabled={busyUserId === u.id}
                             >
                               <RotateCcw className="w-4 h-4" />

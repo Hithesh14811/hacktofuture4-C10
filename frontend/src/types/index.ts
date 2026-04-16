@@ -18,6 +18,8 @@ export interface User {
   face_enrolled?: boolean;
   face_descriptor?: number[];
   last_face_enrollment?: string;
+  account_restricted?: boolean;
+  restriction_reason?: string | null;
 }
 
 export interface Session {

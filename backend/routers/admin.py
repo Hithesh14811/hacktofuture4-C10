@@ -79,18 +79,10 @@ async def restore_access(user_id: str, token_data: dict = Depends(verify_token))
     if not admin or admin.role != "Administrator":
         raise HTTPException(status_code=403, detail="Admin access required")
 
-    sessions = trust_engine.get_all_sessions()
-    count = 0
-    for s in sessions:
+    count = trust_engine.restore_user_access(user_id)
+
+    for s in trust_engine.get_all_sessions():
         if s.user_id == user_id:
-            s.trust_score = 80
-            s.is_compromised = False
-            s.anomalies = []
-            trust_engine.clear_session_restrictions(s)
-            s.access_level = "full"
-            s.pending_action = None
-            s.last_updated = datetime.now().isoformat()
-            count += 1
             await emit_trust_update(s)
 
     await broadcast_access_restored(user_id, admin.name)

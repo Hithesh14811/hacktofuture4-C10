@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
+import { AlertTriangle, Shield, Zap } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useTrustStore } from '../../store/trustStore';
 import { TopBar } from '../dashboard/TopBar';
 import { Sidebar } from '../dashboard/Sidebar';
 import BlastRadiusGraph from '../blast-radius/BlastRadiusGraph';
-import { AlertTriangle, Shield, Zap } from 'lucide-react';
 import type { GraphNode, GraphEdge, BlastRadiusResult } from '../../types';
+
 const USER_TO_GRAPH: Record<string, string> = {
   usr_001: 'sarah',
   usr_002: 'vikram',
@@ -18,7 +19,7 @@ const USER_TO_GRAPH: Record<string, string> = {
 export default function IncidentResponse() {
   const { user, token, session } = useAuthStore();
   const { compromisedAccount, remediationTick, trustScore, ipStatus, location } = useTrustStore();
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed] = useState(false);
   const [nodes, setNodes] = useState<GraphNode[]>([]);
   const [edges, setEdges] = useState<GraphEdge[]>([]);
   const [selectedNode, setSelectedNode] = useState<string | null>(null);
@@ -31,13 +32,8 @@ export default function IncidentResponse() {
   const [remediationBusy, setRemediationBusy] = useState(false);
 
   const isAdmin = user?.role === 'Administrator';
-
-  const canAccess = useMemo(() => {
-    if (isAdmin) return true;
-    return Boolean(compromisedAccount && !compromisedAccount.is_admin);
-  }, [isAdmin, compromisedAccount]);
-
-  const needsTotp = !isAdmin && canAccess;
+  const canAccess = Boolean(token && user);
+  const needsTotp = !isAdmin && Boolean(compromisedAccount && !compromisedAccount.is_admin);
 
   const compromisedGraphId = useMemo(() => {
     if (!compromisedAccount) return null;
@@ -63,6 +59,28 @@ export default function IncidentResponse() {
     return Array.from(ids);
   }, [analysis, compromisedGraphId, edges]);
 
+  const analyzeNode = useCallback(async (nodeId: string) => {
+    try {
+      const res = await fetch('/api/blast-radius/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ start_node: nodeId, max_depth: 3 }),
+      });
+      const data = await res.json();
+      setAnalysis(data);
+
+      try {
+        const hopsRes = await fetch(`/api/blast-radius/hops-to-admin/${nodeId}`);
+        const hopsData = await hopsRes.json();
+        setHopsToAdmin(hopsData.hops);
+      } catch {
+        setHopsToAdmin(null);
+      }
+    } catch (error) {
+      console.error('Failed to analyze:', error);
+    }
+  }, []);
+
   useEffect(() => {
     if (!token) return;
     if (needsTotp && !verified) {
@@ -79,37 +97,21 @@ export default function IncidentResponse() {
       setNodes(data.nodes || []);
       setEdges(data.edges || []);
 
-      if (compromisedAccount) {
-        const graphId = USER_TO_GRAPH[compromisedAccount.user_id];
-        const userNode = graphId
-          ? data.nodes?.find((n: GraphNode) => n.id === graphId)
-          : data.nodes?.find((n: GraphNode) =>
-              n.name?.toLowerCase().includes(compromisedAccount.name.toLowerCase().split(' ')[0])
-            );
-        if (userNode) {
-          setSelectedNode(userNode.id);
-          const ar = await fetch('/api/blast-radius/analyze', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ start_node: userNode.id, max_depth: 3 }),
-          });
-          const ad = await ar.json();
-          setAnalysis(ad);
+      const defaultGraphId = compromisedAccount
+        ? USER_TO_GRAPH[compromisedAccount.user_id]
+        : user
+          ? USER_TO_GRAPH[user.id]
+          : null;
+      const activeNodeId = selectedNode || defaultGraphId || data.nodes?.[0]?.id;
 
-          // Fetch hops to admin
-          try {
-            const hopsRes = await fetch(`/api/blast-radius/hops-to-admin/${userNode.id}`);
-            const hopsData = await hopsRes.json();
-            setHopsToAdmin(hopsData.hops);
-          } catch {
-            setHopsToAdmin(null);
-          }
-        }
+      if (activeNodeId) {
+        setSelectedNode(activeNodeId);
+        await analyzeNode(activeNodeId);
       }
     } catch (error) {
       console.error('Failed to load graph:', error);
     }
-  }, [compromisedAccount]);
+  }, [analyzeNode, compromisedAccount, selectedNode, user]);
 
   useEffect(() => {
     if (!token || !canAccess) return;
@@ -117,28 +119,16 @@ export default function IncidentResponse() {
     loadGraph();
   }, [token, canAccess, needsTotp, verified, loadGraph, remediationTick]);
 
-  const analyzeNode = async (nodeId: string) => {
-    try {
-      const res = await fetch('/api/blast-radius/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ start_node: nodeId, max_depth: 3 }),
-      });
-      const data = await res.json();
-      setAnalysis(data);
+  useEffect(() => {
+    if (!token || !canAccess) return;
+    if (needsTotp && !verified) return;
 
-      // Also fetch hops to admin for this node
-      try {
-        const hopsRes = await fetch(`/api/blast-radius/hops-to-admin/${nodeId}`);
-        const hopsData = await hopsRes.json();
-        setHopsToAdmin(hopsData.hops);
-      } catch {
-        setHopsToAdmin(null);
-      }
-    } catch (error) {
-      console.error('Failed to analyze:', error);
-    }
-  };
+    const interval = setInterval(() => {
+      loadGraph();
+    }, 15000);
+
+    return () => clearInterval(interval);
+  }, [token, canAccess, needsTotp, verified, loadGraph]);
 
   const applyRemediation = async () => {
     if (!token || !compromisedAccount || compromisedAccount.is_admin) return;
@@ -182,9 +172,9 @@ export default function IncidentResponse() {
         <div className="flex flex-1 items-center justify-center p-6">
           <div className="max-w-md rounded-xl border border-border bg-bg-card p-8 text-center">
             <Shield className="mx-auto mb-4 h-12 w-12 text-text-muted" />
-            <h2 className="font-display text-xl font-bold text-text-primary">Incident analysis</h2>
+            <h2 className="font-display text-xl font-bold text-text-primary">IAM topology</h2>
             <p className="mt-2 text-text-secondary">
-              Blast radius review opens when a compromise is detected for a non-admin account, or at any time for administrators.
+              Sign in to view the live identity and resource relationship map for this cloud environment.
             </p>
           </div>
         </div>
@@ -212,75 +202,87 @@ export default function IncidentResponse() {
       <TopBar />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar collapsed={sidebarCollapsed} />
-        <main className="flex flex-1 flex-col overflow-hidden bg-white">
-          {/* AWS Style Header */}
-          <div className="border-b border-[#eaeded] bg-white px-8 py-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-2xl font-bold text-[#232f3e]">IAM Graph & Blast Radius</h1>
-                <p className="text-sm text-[#565959]">Visualize identity relationships and potential impact of compromise.</p>
-              </div>
-              {compromisedAccount && (
-                <div className="flex items-center gap-6 rounded-sm border border-[#d0021b] bg-[#fdf0f1] px-6 py-3">
-                  <div className="flex items-center gap-2 text-[#d0021b]">
-                    <AlertTriangle className="h-5 w-5" />
-                    <span className="font-bold">COMPROMISED: {compromisedAccount.name}</span>
-                  </div>
-                  <div className="h-8 w-px bg-[#d0021b]/20" />
-                  <div className="grid grid-cols-5 gap-8">
-                    <div>
-                      <div className="text-[10px] uppercase text-[#565959]">Trust Score</div>
-                      <div className={`font-mono text-lg font-bold ${trustScore < 40 ? 'text-[#d0021b]' : 'text-[#e47911]'}`}>{trustScore}</div>
-                    </div>
-                    <div>
-                      <div className="text-[10px] uppercase text-[#565959]">IP Status</div>
-                      <div className="font-mono text-lg font-bold text-[#232f3e]">{ipStatus}</div>
-                    </div>
-                    <div>
-                      <div className="text-[10px] uppercase text-[#565959]">Location</div>
-                      <div className="font-mono text-lg font-bold text-[#232f3e]">{location.city}</div>
-                    </div>
-                    <div>
-                      <div className="text-[10px] uppercase text-[#565959]">Risk Level</div>
-                      <div className={`font-mono text-lg font-bold ${trustScore < 40 ? 'text-[#d0021b]' : 'text-[#e47911]'}`}>{riskLevel}</div>
-                    </div>
-                    <div>
-                      <div className="text-[10px] uppercase text-[#565959]">Session Duration</div>
-                      <div className="font-mono text-lg font-bold text-[#232f3e]">{hh}:{mm}:{ss}</div>
-                    </div>
-                  </div>
+        <main className="flex flex-1 overflow-hidden bg-white">
+          <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+            <div className="border-b border-[#eaeded] bg-white px-8 py-4">
+              <div className="flex items-center justify-between gap-6">
+                <div>
+                  <h1 className="text-2xl font-bold text-[#232f3e]">Live IAM Topology</h1>
+                  <p className="text-sm text-[#565959]">Track always-on relationships between identities, policies, and cloud resources in real time.</p>
                 </div>
+                <div className="rounded-sm border border-[#0073bb]/20 bg-[#f7fbff] px-4 py-3">
+                  <div className="text-[10px] uppercase text-[#565959]">Topology Refresh</div>
+                  <div className="mt-1 text-sm font-bold text-[#0073bb]">Streaming every 15 seconds</div>
+                </div>
+                {compromisedAccount && (
+                  <div className="flex items-center gap-6 rounded-sm border border-[#d0021b] bg-[#fdf0f1] px-6 py-3">
+                    <div className="flex items-center gap-2 text-[#d0021b]">
+                      <AlertTriangle className="h-5 w-5" />
+                      <span className="font-bold">COMPROMISED: {compromisedAccount.name}</span>
+                    </div>
+                    <div className="h-8 w-px bg-[#d0021b]/20" />
+                    <div className="grid grid-cols-5 gap-8">
+                      <div>
+                        <div className="text-[10px] uppercase text-[#565959]">Trust Score</div>
+                        <div className={`font-mono text-lg font-bold ${trustScore < 40 ? 'text-[#d0021b]' : 'text-[#e47911]'}`}>{trustScore}</div>
+                      </div>
+                      <div>
+                        <div className="text-[10px] uppercase text-[#565959]">IP Status</div>
+                        <div className="font-mono text-lg font-bold text-[#232f3e]">{ipStatus}</div>
+                      </div>
+                      <div>
+                        <div className="text-[10px] uppercase text-[#565959]">Location</div>
+                        <div className="font-mono text-lg font-bold text-[#232f3e]">{location.city}</div>
+                      </div>
+                      <div>
+                        <div className="text-[10px] uppercase text-[#565959]">Risk Level</div>
+                        <div className={`font-mono text-lg font-bold ${trustScore < 40 ? 'text-[#d0021b]' : 'text-[#e47911]'}`}>{riskLevel}</div>
+                      </div>
+                      <div>
+                        <div className="text-[10px] uppercase text-[#565959]">Session Duration</div>
+                        <div className="font-mono text-lg font-bold text-[#232f3e]">{hh}:{mm}:{ss}</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="relative flex-1">
+              {adminCompromiseView && (
+                <div className="absolute top-4 left-4 z-10 max-w-lg rounded-sm border border-[#d0021b] bg-white p-4 text-sm text-[#565959] shadow-md">
+                  <div className="font-bold text-[#d0021b]">ADMIN ACCOUNT COMPROMISE DETECTED</div>
+                  <p className="mt-2">
+                    Access restricted until secondary recovery. Remediation from this console is disabled until the recovery workflow completes.
+                  </p>
+                </div>
+              )}
+              {!compromisedAccount && (
+                <div className="absolute top-4 left-4 z-10 max-w-lg rounded-sm border border-[#0073bb]/30 bg-white/95 p-4 text-sm text-[#565959] shadow-md">
+                  <div className="font-bold text-[#0073bb]">LIVE TOPOLOGY STREAM</div>
+                  <p className="mt-2">
+                    The IAM graph stays active even without an attack so teams can inspect live connections, permissions, and escalation paths at any time.
+                  </p>
+                </div>
+              )}
+              {nodes.length > 0 && (
+                <BlastRadiusGraph
+                  nodes={nodes}
+                  edges={edges}
+                  selectedNode={selectedNode}
+                  compromisedNodeId={compromisedGraphId}
+                  hopsToAdmin={hopsToAdmin}
+                  onNodeClick={(id) => {
+                    setSelectedNode(id);
+                    analyzeNode(id);
+                  }}
+                />
               )}
             </div>
           </div>
 
-          <div className="relative flex-1">
-            {adminCompromiseView && (
-              <div className="absolute top-4 left-4 z-10 max-w-lg rounded-sm border border-[#d0021b] bg-white p-4 text-sm text-[#565959] shadow-md">
-                <div className="font-bold text-[#d0021b]">ADMIN ACCOUNT COMPROMISE DETECTED</div>
-                <p className="mt-2">
-                  Access restricted until secondary recovery. Contact{' '}
-                  <span className="text-[#0073bb] hover:underline cursor-pointer">security@amazon.com</span>. Remediation from this console is disabled.
-                </p>
-              </div>
-            )}
-            {nodes.length > 0 && (
-              <BlastRadiusGraph
-                nodes={nodes}
-                edges={edges}
-                selectedNode={selectedNode}
-                compromisedNodeId={compromisedGraphId}
-                hopsToAdmin={hopsToAdmin}
-                onNodeClick={(id) => {
-                  setSelectedNode(id);
-                  analyzeNode(id);
-                }}
-              />
-            )}
-          </div>
-
-          <div className="w-96 overflow-y-auto border-l border-[#eaeded] bg-[#f2f3f3] p-6">
-            <h3 className="mb-6 text-lg font-bold text-[#232f3e]">Incident Analysis</h3>
+          <aside className="w-96 overflow-y-auto border-l border-[#eaeded] bg-[#f2f3f3] p-6">
+            <h3 className="mb-6 text-lg font-bold text-[#232f3e]">{compromisedAccount ? 'Incident Analysis' : 'Topology Analysis'}</h3>
 
             {compromisedAccount && (
               <motion.div
@@ -293,7 +295,7 @@ export default function IncidentResponse() {
                   <span className="font-bold uppercase text-xs">Compromised Identity</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-[#fdf0f1] flex items-center justify-center text-[#d0021b] font-bold">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#fdf0f1] font-bold text-[#d0021b]">
                     {compromisedAccount.name.charAt(0)}
                   </div>
                   <div>
@@ -304,19 +306,19 @@ export default function IncidentResponse() {
               </motion.div>
             )}
 
-            {hopsToAdmin !== null && compromisedAccount && (
+            {hopsToAdmin !== null && (
               <div className="mb-6 rounded-sm border border-[#eaeded] bg-white p-4 shadow-sm">
-                <div className="text-[10px] uppercase font-bold text-[#565959] mb-3">Path to Administrator</div>
+                <div className="mb-3 text-[10px] font-bold uppercase text-[#565959]">Path to Administrator</div>
                 <div className="flex items-center gap-4">
                   <div className={`flex h-12 w-12 items-center justify-center rounded-full border-2 font-mono text-xl font-bold ${hopsToAdmin <= 1 ? 'border-[#d0021b] text-[#d0021b]' : 'border-[#e47911] text-[#e47911]'}`}>
-                    {hopsToAdmin === -1 ? '∞' : hopsToAdmin}
+                    {hopsToAdmin === -1 ? 'Inf' : hopsToAdmin}
                   </div>
                   <div className="flex-1">
                     <div className="text-sm font-bold text-[#232f3e]">
                       {hopsToAdmin === -1 ? 'Isolated' : hopsToAdmin === 0 ? 'Admin Node' : `${hopsToAdmin} Hops to Admin`}
                     </div>
-                    <p className="text-[10px] text-[#565959] leading-tight">
-                      {hopsToAdmin === -1 ? 'No direct path to admin privileges detected.' : `The attacker is ${hopsToAdmin} step(s) away from full administrative control.`}
+                    <p className="text-[10px] leading-tight text-[#565959]">
+                      {hopsToAdmin === -1 ? 'No direct path to admin privileges detected.' : `This node is ${hopsToAdmin} step(s) away from full administrative control.`}
                     </p>
                   </div>
                 </div>
@@ -327,23 +329,25 @@ export default function IncidentResponse() {
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="rounded-sm border border-[#eaeded] bg-white p-4 shadow-sm">
-                    <div className="mb-1 text-[10px] text-[#565959] uppercase font-bold">Reachable</div>
+                    <div className="mb-1 text-[10px] font-bold uppercase text-[#565959]">Reachable</div>
                     <div className="text-2xl font-bold text-[#0073bb]">{analysis.reachable_nodes?.length || 0}</div>
                   </div>
                   <div className="rounded-sm border border-[#eaeded] bg-white p-4 shadow-sm">
-                    <div className="mb-1 text-[10px] text-[#565959] uppercase font-bold">Risk Score</div>
+                    <div className="mb-1 text-[10px] font-bold uppercase text-[#565959]">Risk Score</div>
                     <div className="text-2xl font-bold text-[#e47911]">{analysis.total_risk_score || 0}</div>
                   </div>
                 </div>
 
-                <div className="text-[10px] uppercase font-bold text-[#565959] mb-2">Blast Radius Entities</div>
+                <div className="mb-2 text-[10px] font-bold uppercase text-[#565959]">
+                  {compromisedAccount ? 'Blast Radius Entities' : 'Connected Entities'}
+                </div>
                 <div className="space-y-2">
                   {analysis.reachable_nodes?.slice(0, 8).map((node: { name: string; risk_level: string; path: string[] }, i: number) => (
                     <div
                       key={i}
-                      className="rounded-sm border border-[#eaeded] bg-white p-3 hover:border-[#0073bb] transition-colors"
+                      className="rounded-sm border border-[#eaeded] bg-white p-3 transition-colors hover:border-[#0073bb]"
                     >
-                      <div className="flex items-center justify-between mb-1">
+                      <div className="mb-1 flex items-center justify-between">
                         <span className="text-xs font-bold text-[#232f3e]">{node.name}</span>
                         <span
                           className={`rounded-sm px-1.5 py-0.5 text-[10px] font-bold uppercase ${
@@ -357,8 +361,8 @@ export default function IncidentResponse() {
                           {node.risk_level}
                         </span>
                       </div>
-                      <div className="text-[10px] font-mono text-[#565959] truncate">
-                        {node.path?.join(' → ')}
+                      <div className="truncate text-[10px] font-mono text-[#565959]">
+                        {node.path?.join(' -> ')}
                       </div>
                     </div>
                   ))}
@@ -372,26 +376,26 @@ export default function IncidentResponse() {
                   type="button"
                   onClick={applyRemediation}
                   disabled={remediationBusy}
-                  className="flex w-full items-center justify-center gap-2 rounded-sm bg-[#d0021b] py-3 text-sm font-bold text-white hover:bg-[#a30115] transition-colors disabled:opacity-50"
+                  className="flex w-full items-center justify-center gap-2 rounded-sm bg-[#d0021b] py-3 text-sm font-bold text-white transition-colors hover:bg-[#a30115] disabled:opacity-50"
                 >
                   <Zap className="h-4 w-4" />
                   {remediationBusy ? 'ISOLATING...' : 'RUN REMEDIATION'}
                 </button>
-                <p className="mt-2 text-[10px] text-[#565959] text-center">
+                <p className="mt-2 text-center text-[10px] text-[#565959]">
                   This action will drop the trust score and revoke permissions.
                 </p>
               </div>
             )}
 
-            {!compromisedAccount && isAdmin && (
+            {!compromisedAccount && (
               <div className="mt-8 rounded-sm border border-[#eaeded] bg-white p-6 text-center shadow-sm">
-                <Shield className="h-10 w-10 text-[#565959] mx-auto mb-4 opacity-20" />
+                <Shield className="mx-auto mb-4 h-10 w-10 text-[#565959] opacity-20" />
                 <p className="text-xs text-[#565959]">
-                  Select a node on the IAM map to analyze its blast radius and potential escalation paths.
+                  Select any node on the IAM map to inspect connected services, reachable entities, and potential privilege escalation paths.
                 </p>
               </div>
             )}
-          </div>
+          </aside>
         </main>
       </div>
 
@@ -408,14 +412,14 @@ export default function IncidentResponse() {
           >
             <h3 className="mb-4 font-display text-xl font-bold text-text-primary">Secure Access Required</h3>
             <p className="mb-4 text-sm text-text-secondary">
-              Enter the 6-digit code for <strong>TRUSTNET</strong> (demo: <span className="font-mono">847291</span>).
+              Enter the 6-digit code for <strong>NimbusCloud</strong> (demo: <span className="font-mono">847291</span>).
             </p>
             <input
               type="text"
               value={totpCode}
               onChange={(e) => setTotpCode(e.target.value)}
               placeholder="Enter code"
-              className="mb-2 w-full rounded-lg border border-border bg-bg-secondary py-3 px-4 text-center font-mono text-xl tracking-widest"
+              className="mb-2 w-full rounded-lg border border-border bg-bg-secondary px-4 py-3 text-center font-mono text-xl tracking-widest"
             />
             {totpError && <p className="mb-4 text-sm text-accent-red">{totpError}</p>}
             <button

@@ -42,7 +42,7 @@ _users_cache: Optional[List[User]] = None
 _admin_recovery_requests: Dict[str, Dict[str, Any]] = {}
 
 NON_ADMIN_PASSKEY_THRESHOLD = 95
-NON_ADMIN_CAMERA_THRESHOLD = 85
+NON_ADMIN_CAMERA_THRESHOLD = 60
 ADMIN_MIN_TRUST = 95
 
 
@@ -446,6 +446,28 @@ def clear_session_restrictions(session: Session) -> Session:
     session.pending_action = None
     set_user_restriction(session.user_id, False, None)
     return session
+
+
+def restore_user_access(user_id: str) -> int:
+    set_user_restriction(user_id, False, None)
+
+    restored_sessions = 0
+    for session in _sessions.values():
+        if session.user_id != user_id:
+            continue
+
+        session.trust_score = max(session.trust_score, 80)
+        session.baseline_score = 100
+        session.is_compromised = False
+        session.anomalies = []
+        session.signals = []
+        session.access_level = "full"
+        clear_session_restrictions(session)
+        session.last_updated = datetime.now().isoformat()
+        restored_sessions += 1
+
+    sync_session_user(user_id)
+    return restored_sessions
 
 
 def ensure_admin_recovery_request(user_id: str) -> Dict[str, Any]:

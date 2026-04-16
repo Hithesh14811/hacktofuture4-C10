@@ -50,14 +50,14 @@ export default function BlastRadiusGraph({
       position: nodeMap[node.id] || { x: Math.random() * 400, y: Math.random() * 400 },
       data: { label: node.name },
       style: {
-        background: node.id === compromisedNodeId ? '#fdf0f1' : '#ffffff',
+        background: node.id === compromisedNodeId ? '#fdf0f1' : '#fbfdff',
         color: '#232f3e',
         border: compromisedNodeId === node.id
           ? '2px solid #d0021b'
           : selectedNode === node.id
           ? '2px solid #e47911'
           : '1px solid #eaeded',
-        borderRadius: '2px',
+        borderRadius: '10px',
         padding: '12px 18px',
         fontSize: '12px',
         fontWeight: 'bold',
@@ -66,7 +66,7 @@ export default function BlastRadiusGraph({
           ? '0 0 12px rgba(208, 2, 27, 0.2)'
           : selectedNode === node.id
           ? '0 0 10px rgba(228, 121, 17, 0.2)'
-          : '0 1px 3px rgba(0, 0, 0, 0.05)',
+          : '0 10px 25px rgba(35, 47, 62, 0.08)',
       },
       selected: selectedNode === node.id,
     }));
@@ -79,11 +79,11 @@ export default function BlastRadiusGraph({
       target: edge.target,
       label: edge.label,
       type: 'smoothstep',
-      animated: edge.severity === 'critical',
+      animated: true,
       style: {
         stroke: getEdgeColor(edge.severity),
-        strokeWidth: edge.severity === 'critical' ? 2 : 1,
-        strokeDasharray: '4 4', // Dotted lines as requested
+        strokeWidth: edge.severity === 'critical' ? 2.5 : 1.5,
+        strokeDasharray: edge.severity === 'critical' ? '0' : '6 4',
       },
       labelStyle: {
         fill: '#565959',
@@ -119,7 +119,7 @@ export default function BlastRadiusGraph({
   const nodeTypes = useMemo(() => ({}), []);
 
   return (
-    <div className="w-full h-full bg-[#f2f3f3] relative">
+    <div className="w-full h-full bg-[radial-gradient(circle_at_top_left,_rgba(0,115,187,0.08),_transparent_35%),linear-gradient(180deg,_#f8fbff_0%,_#eef4fb_100%)] relative">
       <ReactFlow
         nodes={nodes_state}
         edges={edges_state}
@@ -131,9 +131,9 @@ export default function BlastRadiusGraph({
         attributionPosition="bottom-left"
       >
         <Background
-          color="#eaeded"
-          gap={25}
-          size={1}
+          color="#d6e4f2"
+          gap={22}
+          size={1.2}
         />
         <Controls />
       </ReactFlow>

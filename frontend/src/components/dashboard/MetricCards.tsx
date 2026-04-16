@@ -100,7 +100,7 @@ export function MetricCards() {
   return (
     <div className="grid grid-cols-5 gap-4">
       <MetricCard
-        label="Trust Score"
+        label="Identity Confidence"
         value={trustScore}
         icon={icons.trust}
         color={risk.color}
@@ -119,13 +119,13 @@ export function MetricCards() {
         color="#0073bb"
       />
       <MetricCard
-        label="Session Duration"
+        label="Console Session"
         value={sessionDuration}
         icon={icons.time}
         color="#565959"
       />
       <MetricCard
-        label="Risk Level"
+        label="Security Posture"
         value={isCompromised ? 'COMPROMISED' : risk.label}
         icon={icons.risk}
         color={isCompromised ? '#d0021b' : risk.color}

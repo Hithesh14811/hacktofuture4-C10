@@ -130,17 +130,14 @@ def _apply_login_risk_context(user, session, request: LoginRequest) -> None:
     if request.mock_signal:
         trust_engine.inject_demo_scenario(session.session_id, request.mock_signal)
 
-    # Logic: 
+    # Logic:
     # 1. Either IP or Location suspicious -> Passkey after 5s
-    # 2. Both IP and Location suspicious -> Camera after Passkey
+    # 2. Face verification is decided later by trust score policy (< 60 only)
     if ip_suspicious or location_suspicious:
         session.needs_passkey = True
         session.passkey_due_at = (datetime.now() + timedelta(seconds=5)).isoformat()
         session.pending_action = "passkey_challenge"
         session.required_verification = "passkey"
-    
-    if ip_suspicious and location_suspicious:
-        session.needs_camera_after_passkey = True
 
 
 @router.post("/login", response_model=LoginResponse)

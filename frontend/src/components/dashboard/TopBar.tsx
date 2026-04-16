@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Shield, Bell, Clock, LogOut, ChevronDown } from 'lucide-react';
+import { Bell, Clock, LogOut, ChevronDown, Cloud, Activity } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useTrustStore } from '../../store/trustStore';
 import { syncSessionToStores } from '../../store/sessionSync';
@@ -151,18 +151,22 @@ export function TopBar() {
   };
 
   return (
-    <header className="h-14 bg-[#232f3e] border-b border-[#37475a] flex items-center justify-between px-6">
+    <header className="h-16 bg-[#1b2733] border-b border-[#31465f] flex items-center justify-between px-6 shadow-[0_8px_30px_rgba(15,23,42,0.18)]">
       <div className="flex items-center gap-6">
         <div className="flex items-center gap-2">
-          <Shield className="w-5 h-5 text-white" />
-          <span className="font-bold text-lg text-white tracking-tight">TRUSTNET <span className="text-[#e47911]">IAM</span></span>
+          <Cloud className="w-5 h-5 text-[#ffb347]" />
+          <span className="font-bold text-lg text-white tracking-tight">NimbusCloud <span className="text-[#7cc4ff]">Console</span></span>
         </div>
         
         <div className="hidden md:flex items-center gap-4 ml-4">
           <div className="relative group">
             <button className="text-[#879596] hover:text-white text-sm font-bold flex items-center gap-1">
-              Services <ChevronDown className="w-3 h-3" />
+              Cloud Services <ChevronDown className="w-3 h-3" />
             </button>
+          </div>
+          <div className="hidden lg:flex items-center gap-2 rounded-sm border border-[#31465f] bg-[#223244] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.16em] text-[#b6c7d8]">
+            <Activity className="h-3.5 w-3.5 text-[#56d39b]" />
+            Live IAM Telemetry
           </div>
         </div>
       </div>
@@ -210,7 +214,7 @@ export function TopBar() {
                 className="absolute right-0 top-full mt-2 w-80 bg-[#232f3e] border border-[#37475a] rounded-md shadow-xl z-50 max-h-80 overflow-y-auto"
               >
                 <div className="p-3 border-b border-[#37475a]">
-                  <h3 className="font-medium text-white text-sm">Notifications</h3>
+                  <h3 className="font-medium text-white text-sm">Operations Feed</h3>
                 </div>
                 {notifications.length === 0 ? (
                   <div className="p-4 text-center text-[#879596] text-sm">

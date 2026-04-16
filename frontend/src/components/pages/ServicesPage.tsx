@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Server, Play, Square, Settings, Lock, Eye, EyeOff, Package, Database, Cloud, Code, HardDrive, Shield } from 'lucide-react';
+import { Server, Settings, Lock, Eye, Database, Cloud, Code, HardDrive, Shield } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useTrustStore } from '../../store/trustStore';
 import { TopBar } from '../dashboard/TopBar';
@@ -38,48 +38,47 @@ export default function ServicesPage() {
   };
 
   const isLocked = accessLevel === 'blocked' || accessLevel === 'read_only' || trustScore < 40;
-
-  const userServices = ALL_SERVICES.filter(s => canAccess(s.privileged));
+  const userServices = ALL_SERVICES.filter((s) => canAccess(s.privileged));
 
   return (
-    <div className="h-screen flex flex-col bg-[#f2f3f3] text-[#11181C]">
+    <div className="flex h-screen flex-col bg-[#f2f3f3] text-[#11181C]">
       <TopBar />
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex flex-1 overflow-hidden">
         <Sidebar collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} />
-        <main className="flex-1 p-8 overflow-auto bg-white">
+        <main className="flex-1 overflow-auto bg-white p-8">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             <div className="mb-8">
               <h2 className="text-2xl font-bold text-[#232f3e]">Cloud Infrastructure Services</h2>
-              <p className="text-sm text-[#565959]">Manage and monitor your decentralized cloud resources with continuous identity verification.</p>
+              <p className="text-sm text-[#565959]">Operate a cloud-style service catalog while security controls continuously validate the session in the background.</p>
             </div>
-            
+
             {isLocked && (
-              <div className="bg-[#fff4e5] border border-[#e47911]/40 rounded-sm p-4 mb-8 flex items-center gap-3 shadow-sm">
+              <div className="mb-8 flex items-center gap-3 rounded-sm border border-[#e47911]/40 bg-[#fff4e5] p-4 shadow-sm">
                 <Lock className="w-5 h-5 text-[#e47911]" />
-                <span className="text-sm font-bold text-[#e47911]">Identity access restricted — multi-factor authentication or biometric verification required for this session level.</span>
+                <span className="text-sm font-bold text-[#e47911]">Cloud access is restricted for this session until required verification completes or an administrator unlocks the account.</span>
               </div>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
               {userServices.map((service, i) => (
                 <motion.div
                   key={service.id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.05 }}
-                  className={`bg-white border rounded-sm p-6 shadow-sm hover:shadow-md transition-shadow ${
+                  className={`rounded-sm border bg-white p-6 shadow-sm transition-shadow hover:shadow-md ${
                     service.status === 'degraded' ? 'border-[#e47911]' : 'border-[#eaeded]'
                   }`}
                 >
-                  <div className="flex items-start justify-between mb-6">
-                    <div className={`w-12 h-12 rounded-sm flex items-center justify-center ${
+                  <div className="mb-6 flex items-start justify-between">
+                    <div className={`flex h-12 w-12 items-center justify-center rounded-sm ${
                       service.status === 'running' ? 'bg-[#00ff88]/10 text-[#00ff88]' :
                       service.status === 'degraded' ? 'bg-[#fff4e5] text-[#e47911]' :
                       'bg-[#fdf0f1] text-[#d0021b]'
                     }`}>
                       {service.icon}
                     </div>
-                    <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-sm ${
+                    <span className={`rounded-sm px-2 py-0.5 text-[10px] font-bold uppercase ${
                       service.status === 'running' ? 'bg-[#00ff88]/10 text-[#00ff88]' :
                       service.status === 'degraded' ? 'bg-[#fff4e5] text-[#e47911]' :
                       'bg-[#fdf0f1] text-[#d0021b]'
@@ -87,25 +86,25 @@ export default function ServicesPage() {
                       {service.status.toUpperCase()}
                     </span>
                   </div>
-                  <h3 className="text-lg font-bold text-[#232f3e] mb-1">{service.name}</h3>
-                  <p className="text-[10px] uppercase font-bold text-[#565959] mb-6">Last active: {service.lastAccessed}</p>
+                  <h3 className="mb-1 text-lg font-bold text-[#232f3e]">{service.name}</h3>
+                  <p className="mb-6 text-[10px] font-bold uppercase text-[#565959]">Last active: {service.lastAccessed}</p>
                   <div className="flex gap-3">
-                    <button 
+                    <button
                       disabled={isLocked}
-                      className={`flex-1 py-2 rounded-sm text-sm font-bold transition-colors ${
-                        isLocked 
-                          ? 'bg-[#f2f3f3] text-[#879596] cursor-not-allowed border border-[#eaeded]'
+                      className={`flex-1 rounded-sm py-2 text-sm font-bold transition-colors ${
+                        isLocked
+                          ? 'cursor-not-allowed border border-[#eaeded] bg-[#f2f3f3] text-[#879596]'
                           : 'bg-[#0073bb] text-white hover:bg-[#005f99]'
                       }`}
                     >
                       Console Access
                     </button>
-                    <button 
+                    <button
                       disabled={isLocked || !canAccess(['Administrator', 'DevOps Engineer'])}
-                      className={`p-2 rounded-sm transition-colors border ${
+                      className={`rounded-sm border p-2 transition-colors ${
                         isLocked || !canAccess(['Administrator', 'DevOps Engineer'])
-                          ? 'bg-[#f2f3f3] text-[#879596] cursor-not-allowed border-[#eaeded]'
-                          : 'bg-white text-[#565959] border-[#879596] hover:bg-[#f2f3f3]'
+                          ? 'cursor-not-allowed border-[#eaeded] bg-[#f2f3f3] text-[#879596]'
+                          : 'border-[#879596] bg-white text-[#565959] hover:bg-[#f2f3f3]'
                       }`}
                     >
                       <Settings className="w-4 h-4" />
