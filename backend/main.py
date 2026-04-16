@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from realtime import sio, register_lifespan_handlers
 from routers import auth, trust, face, admin, blast_radius, remediation, analyze, telemetry
 
-fastapi_app = FastAPI(title="TRUSTNET API", version="2.4.1")
+fastapi_app = FastAPI(title="Agenticzero API", version="2.4.1")
 
 fastapi_app.add_middleware(
     CORSMiddleware,
@@ -30,7 +30,7 @@ fastapi_app.include_router(telemetry.router, prefix="/api")
 @fastapi_app.get("/")
 async def root():
     return {
-        "service": "TRUSTNET Zero Trust Platform",
+        "service": "Agenticzero - Zero Trust Platform",
         "version": "2.4.1",
         "status": "operational",
     }
