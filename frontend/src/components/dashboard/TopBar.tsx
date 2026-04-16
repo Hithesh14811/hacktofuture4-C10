@@ -1,0 +1,263 @@
+import { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
+import { Shield, Bell, Clock, LogOut, ChevronDown } from 'lucide-react';
+import { useAuthStore } from '../../store/authStore';
+import { useTrustStore } from '../../store/trustStore';
+import { syncSessionToStores } from '../../store/sessionSync';
+
+interface TrustScoreGaugeProps {
+  score: number;
+}
+
+export function TrustScoreGauge({ score }: TrustScoreGaugeProps) {
+  const getColor = (s: number) => {
+    if (s >= 80) return '#00FF88';
+    if (s >= 60) return '#FFB800';
+    if (s >= 40) return '#FF8C00';
+    return '#FF2D55';
+  };
+
+  const color = getColor(score);
+  const circumference = 2 * Math.PI * 45;
+  const strokeDashoffset = circumference - (score / 100) * circumference;
+
+  return (
+    <div className="relative w-20 h-20">
+      <svg className="w-full h-full -rotate-90">
+        <circle
+          cx="50"
+          cy="50"
+          r="45"
+          fill="none"
+          stroke="#1E2D40"
+          strokeWidth="6"
+        />
+        <motion.circle
+          cx="50"
+          cy="50"
+          r="45"
+          fill="none"
+          stroke={color}
+          strokeWidth="6"
+          strokeLinecap="round"
+          initial={{ strokeDashoffset: circumference }}
+          animate={{ strokeDashoffset }}
+          transition={{ duration: 1, ease: 'easeOut' }}
+          style={{
+            filter: `drop-shadow(0 0 8px ${color})`,
+          }}
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <motion.span
+          className="text-lg font-mono font-bold"
+          style={{ color }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          key={score}
+        >
+          {score}
+        </motion.span>
+        <span className="text-[10px] text-text-muted uppercase">Trust</span>
+      </div>
+    </div>
+  );
+}
+
+export function TopBar() {
+  const { user, logout, token, setSession, session } = useAuthStore();
+  const { trustScore, notifications } = useTrustStore();
+  const [sessionTime, setSessionTime] = useState('00:00:00');
+  const [showNotifications, setShowNotifications] = useState(false);
+
+  useEffect(() => {
+    const fetchLatestTrust = async () => {
+      if (!token || !user) return;
+      try {
+        const response = await fetch('/api/auth/me', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          if (data.session) {
+            setSession(data.session);
+            syncSessionToStores(data.session, data.user);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch latest trust score:', err);
+      }
+    };
+
+    fetchLatestTrust();
+    const pollInterval = setInterval(fetchLatestTrust, 30000); // Poll every 30s as fallback to socket
+    
+    return () => clearInterval(pollInterval);
+  }, [token, user, setSession]);
+
+  useEffect(() => {
+    if (!session?.login_time) {
+      setSessionTime('00:00:00');
+      return;
+    }
+
+    const interval = setInterval(() => {
+      const startTime = new Date(session.login_time).getTime();
+      const elapsed = Math.max(0, Date.now() - startTime);
+      const hours = Math.floor(elapsed / 3600000);
+      const minutes = Math.floor((elapsed % 3600000) / 60000);
+      const seconds = Math.floor((elapsed % 60000) / 1000);
+      setSessionTime(
+        `${hours.toString().padStart(2, '0')}:${minutes
+          .toString()
+          .padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+      );
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [session?.login_time]);
+
+  const getRoleBadgeColor = (role?: string) => {
+    switch (role) {
+      case 'Administrator':
+        return 'bg-[#d0021b]/10 text-[#d0021b] border-[#d0021b]/20';
+      case 'DevOps Engineer':
+        return 'bg-[#0073bb]/10 text-[#0073bb] border-[#0073bb]/20';
+      case 'Developer':
+        return 'bg-[#00a1c9]/10 text-[#00a1c9] border-[#00a1c9]/20';
+      default:
+        return 'bg-[#565959]/10 text-[#565959] border-[#565959]/20';
+    }
+  };
+
+  const unreadCount = notifications.filter(n => n.severity === 'critical' || n.severity === 'warning').length;
+
+  return (
+    <header className="h-14 bg-[#232f3e] border-b border-[#37475a] flex items-center justify-between px-6">
+      <div className="flex items-center gap-6">
+        <div className="flex items-center gap-2">
+          <Shield className="w-5 h-5 text-white" />
+          <span className="font-bold text-lg text-white tracking-tight">TRUSTNET <span className="text-[#e47911]">IAM</span></span>
+        </div>
+        
+        <div className="hidden md:flex items-center gap-4 ml-4">
+          <div className="relative group">
+            <button className="text-[#879596] hover:text-white text-sm font-bold flex items-center gap-1">
+              Services <ChevronDown className="w-3 h-3" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
+          <div className="flex flex-col items-end mr-2">
+            <span className="text-white font-bold text-sm">{user?.name}</span>
+            <span className={`text-[10px] px-1.5 py-0 rounded border uppercase font-bold ${getRoleBadgeColor(user?.role)}`}>
+              {user?.role}
+            </span>
+          </div>
+          <img
+            src={user?.avatar}
+            alt={user?.name}
+            className="w-8 h-8 rounded-full border border-[#37475a]"
+          />
+        </div>
+
+        <div className="h-6 w-px bg-[#37475a]" />
+
+        <div className="flex items-center gap-4 text-[#879596]">
+          <div className="flex items-center gap-2">
+            <Clock className="w-4 h-4" />
+            <span className="font-mono text-xs">{sessionTime}</span>
+          </div>
+
+          <div className="relative">
+            <button
+              onClick={() => setShowNotifications(!showNotifications)}
+              className="relative p-2 hover:bg-[#37475a] rounded-sm transition-colors"
+            >
+              <Bell className="w-4 h-4" />
+              {unreadCount > 0 && (
+                <span className="absolute top-0 right-0 w-4 h-4 bg-[#d0021b] text-white text-[10px] rounded-full flex items-center justify-center font-bold">
+                  {unreadCount}
+                </span>
+              )}
+            </button>
+
+            {showNotifications && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="absolute right-0 top-full mt-2 w-80 bg-[#232f3e] border border-[#37475a] rounded-md shadow-xl z-50 max-h-80 overflow-y-auto"
+              >
+                <div className="p-3 border-b border-[#37475a]">
+                  <h3 className="font-medium text-white text-sm">Notifications</h3>
+                </div>
+                {notifications.length === 0 ? (
+                  <div className="p-4 text-center text-[#879596] text-sm">
+                    No notifications
+                  </div>
+                ) : (
+                  notifications.slice(0, 10).map((notif) => (
+                    <div
+                      key={notif.id}
+                      className={`p-3 border-b border-[#37475a] last:border-0 ${
+                        notif.severity === 'critical'
+                          ? 'bg-[#d0021b]/10'
+                          : notif.severity === 'warning'
+                            ? 'bg-[#e47911]/10'
+                            : ''
+                      }`}
+                    >
+                      <div className="flex items-start gap-2">
+                        <span
+                          className={`w-2 h-2 rounded-full mt-1.5 ${
+                            notif.severity === 'critical'
+                              ? 'bg-[#d0021b]'
+                              : notif.severity === 'warning'
+                                ? 'bg-[#e47911]'
+                                : 'bg-[#00FF88]'
+                          }`}
+                        />
+                        <div>
+                          <p className="text-sm text-white">{notif.message}</p>
+                          <p className="text-xs text-[#879596]">
+                            {new Date(notif.timestamp).toLocaleTimeString()}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </motion.div>
+            )}
+          </div>
+
+          <button
+            onClick={async () => {
+              if (token) {
+                try {
+                  await fetch('/api/auth/logout', {
+                    method: 'POST',
+                    headers: { Authorization: `Bearer ${token}` },
+                  });
+                } catch {
+                  /* ignore */
+                }
+              }
+              useTrustStore.getState().reset();
+              logout();
+            }}
+            className="p-2 hover:bg-[#37475a] rounded-sm transition-colors text-[#879596] hover:text-[#d0021b]"
+            title="Sign Out"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    </header>
+  );
+}

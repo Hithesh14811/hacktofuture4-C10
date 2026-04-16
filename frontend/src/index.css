@@ -1,0 +1,144 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg-primary: #080B14;
+  --color-bg-secondary: #0D1117;
+  --color-bg-card: #0F1923;
+  --color-bg-elevated: #162032;
+  --color-accent-cyan: #00D4FF;
+  --color-accent-green: #00FF88;
+  --color-accent-amber: #FFB800;
+  --color-accent-red: #FF2D55;
+  --color-accent-violet: #7C3AED;
+  --color-text-primary: #F0F6FF;
+  --color-text-secondary: #8B9BC8;
+  --color-text-muted: #4A5568;
+  --color-border: #1E2D40;
+  
+  --font-display: "Syne", sans-serif;
+  --font-body: "Outfit", sans-serif;
+  --font-mono: "IBM Plex Mono", monospace;
+  --font-mono-alert: "JetBrains Mono", monospace;
+  
+  --shadow-glow-cyan: 0 0 20px rgba(0, 212, 255, 0.3);
+  --shadow-glow-red: 0 0 20px rgba(255, 45, 85, 0.4);
+  --shadow-glow-green: 0 0 20px rgba(0, 255, 136, 0.3);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-family: var(--font-body);
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+.font-body {
+  font-family: var(--font-body);
+}
+
+.font-mono {
+  font-family: var(--font-mono);
+}
+
+.font-mono-alert {
+  font-family: var(--font-mono-alert);
+}
+
+@keyframes scanline {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(100vh);
+  }
+}
+
+.scanline-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 9999;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0) 0px,
+    rgba(0, 0, 0, 0) 1px,
+    rgba(0, 212, 255, 0.03) 1px,
+    rgba(0, 212, 255, 0.03) 2px
+  );
+  animation: scanline 8s linear infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(0.8);
+  }
+}
+
+.pulse-dot {
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+@keyframes rotate-border {
+  0% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: 60;
+  }
+}
+
+.rotating-border {
+  animation: rotate-border 2s linear infinite;
+}
+
+@keyframes grid-dot {
+  0%, 100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+.grid-bg {
+  background-image: radial-gradient(circle, var(--color-border) 1px, transparent 1px);
+  background-size: 30px 30px;
+  animation: grid-dot 4s ease-in-out infinite;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
+}

@@ -1,0 +1,14 @@
+[
+  {"id": "sarah", "name": "Sarah Chen (Admin)", "type": "User", "privilege_score": 100, "risk_level": "Critical", "is_admin_role": true},
+  {"id": "vikram", "name": "Vikram Nair (DevOps)", "type": "User", "privilege_score": 72, "risk_level": "High"},
+  {"id": "priya", "name": "Priya Sharma (Developer)", "type": "User", "privilege_score": 55, "risk_level": "Medium"},
+  {"id": "rahul", "name": "Rahul Mehta (Data Analyst)", "type": "User", "privilege_score": 45, "risk_level": "Medium"},
+  {"id": "cicd", "name": "CI/CD Bot", "type": "ServicePrincipal", "privilege_score": 35, "risk_level": "Medium"},
+  {"id": "admin_role", "name": "AdministratorAccess", "type": "Role", "privilege_score": 100, "risk_level": "Critical", "is_admin_role": true},
+  {"id": "devops_role", "name": "DevOpsRole", "type": "Role", "privilege_score": 72, "risk_level": "High"},
+  {"id": "secrets_res", "name": "Secrets Manager /prod/*", "type": "Resource", "privilege_score": 98, "risk_level": "Critical", "sensitive": true},
+  {"id": "crown_db", "name": "Crown Jewel DB", "type": "CriticalAsset", "privilege_score": 95, "risk_level": "Critical", "sensitive": true},
+  {"id": "admin_policy", "name": "AdminAccessPolicy", "type": "Policy", "privilege_score": 100, "risk_level": "Critical", "is_wildcard_admin_policy": true},
+  {"id": "lambda_res", "name": "Lambda Functions", "type": "Resource", "privilege_score": 60, "risk_level": "High"},
+  {"id": "s3_res", "name": "S3 Data Buckets", "type": "Resource", "privilege_score": 70, "risk_level": "High", "sensitive": true}
+]

@@ -1,0 +1,12 @@
+[
+  {"id": "e1", "source": "cicd", "target": "devops_role", "type": "AssumeRole", "action": "sts:AssumeRole", "severity": "high", "label": "Assume DevOps Role"},
+  {"id": "e2", "source": "devops_role", "target": "admin_role", "type": "AssumeRole", "action": "sts:AssumeRole", "severity": "critical", "label": "Assume Admin (break-glass)"},
+  {"id": "e3", "source": "admin_role", "target": "admin_policy", "type": "AttachedPolicy", "action": "iam:AttachRolePolicy", "severity": "critical", "label": "Admin policy attached"},
+  {"id": "e4", "source": "admin_policy", "target": "crown_db", "type": "AccessResource", "action": "rds:*", "severity": "critical", "label": "Full DB access"},
+  {"id": "e5", "source": "admin_policy", "target": "secrets_res", "type": "AccessResource", "action": "secretsmanager:*", "severity": "critical", "label": "All secrets access"},
+  {"id": "e6", "source": "devops_role", "target": "secrets_res", "type": "AccessResource", "action": "secretsmanager:GetSecretValue", "severity": "high", "label": "Read prod secrets"},
+  {"id": "e7", "source": "vikram", "target": "devops_role", "type": "AssumeRole", "action": "sts:AssumeRole", "severity": "high", "label": "Assume DevOps"},
+  {"id": "e8", "source": "priya", "target": "lambda_res", "type": "AccessResource", "action": "lambda:InvokeFunction", "severity": "medium", "label": "Invoke Lambda"},
+  {"id": "e9", "source": "rahul", "target": "s3_res", "type": "AccessResource", "action": "s3:GetObject", "severity": "medium", "label": "Read S3 data"},
+  {"id": "e10", "source": "sarah", "target": "admin_role", "type": "AssumeRole", "action": "sts:AssumeRole", "severity": "critical", "label": "Admin assumes role"}
+]
