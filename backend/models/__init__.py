@@ -50,6 +50,8 @@ class User(BaseModel):
     face_enrolled: bool = False
     face_descriptor: Optional[List[float]] = None
     last_face_enrollment: Optional[str] = None
+    account_restricted: bool = False
+    restriction_reason: Optional[str] = None
 
 
 class Session(BaseModel):
@@ -75,6 +77,12 @@ class Session(BaseModel):
     camera_verified: bool = False
     face_fail_attempts: int = 0
     passkey_due_at: Optional[str] = None
+    restriction_reason: Optional[str] = None
+    block_message: Optional[str] = None
+    required_verification: Optional[str] = None
+    admin_recovery_required: bool = False
+    admin_recovery_status: Optional[str] = None
+    admin_recovery_request_id: Optional[str] = None
 
 
 class SessionTrustState(BaseModel):
@@ -166,6 +174,11 @@ class Notification(BaseModel):
     timestamp: str
     user_id: Optional[str] = None
     action_url: Optional[str] = None
+
+
+class AdminRecoveryVoteRequest(BaseModel):
+    request_id: str
+    approve: bool
 
 
 class RemediationApplyRequest(BaseModel):

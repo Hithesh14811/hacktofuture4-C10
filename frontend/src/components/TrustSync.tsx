@@ -53,6 +53,12 @@ export function TrustSync() {
       anomalies?: string[];
       login_time?: string;
       face_verified_this_session?: boolean;
+      restriction_reason?: string | null;
+      block_message?: string | null;
+      required_verification?: string | null;
+      admin_recovery_required?: boolean;
+      admin_recovery_status?: string | null;
+      admin_recovery_request_id?: string | null;
     }) => {
       const authState = useAuthStore.getState();
       const mySession = authState.session;
@@ -76,6 +82,12 @@ export function TrustSync() {
             anomalies: p.anomalies ?? mySession.anomalies,
             login_time: p.login_time ?? mySession.login_time,
             face_verified_this_session: p.face_verified_this_session ?? mySession.face_verified_this_session,
+            restriction_reason: p.restriction_reason ?? mySession.restriction_reason,
+            block_message: p.block_message ?? mySession.block_message,
+            required_verification: p.required_verification ?? mySession.required_verification,
+            admin_recovery_required: p.admin_recovery_required ?? mySession.admin_recovery_required,
+            admin_recovery_status: p.admin_recovery_status ?? mySession.admin_recovery_status,
+            admin_recovery_request_id: p.admin_recovery_request_id ?? mySession.admin_recovery_request_id,
           }
         : null;
 
@@ -155,6 +167,31 @@ export function TrustSync() {
       useTrustStore.getState().bumpRemediationTick();
     };
 
+    const onAdminRecoveryUpdate = (p: {
+      request_id: string;
+      user_id: string;
+      status: string;
+      votes: Record<string, boolean>;
+      eligible_voters: string[];
+    }) => {
+      const me = useAuthStore.getState().user;
+      if (!me || me.role === 'Administrator') return;
+      useTrustStore.getState().addNotification({
+        id: `admin_recovery_${p.request_id}`,
+        severity: 'critical',
+        message:
+          p.status === 'pending'
+            ? 'Administrator account recovery requires your approval vote.'
+            : p.status === 'approved'
+              ? 'Administrator account recovery has been approved.'
+              : 'Administrator account recovery has been denied.',
+        timestamp: new Date().toISOString(),
+        user_id: p.user_id,
+        request_id: p.request_id,
+        vote_status: p.votes[me.id],
+      });
+    };
+
     const onRemediation = () => {
       useTrustStore.getState().bumpRemediationTick();
       useTrustStore.getState().addNotification({
@@ -169,6 +206,7 @@ export function TrustSync() {
     socket.on('account_compromised', onCompromised);
     socket.on('access_restored', onRestored);
     socket.on('remediation_applied', onRemediation);
+    socket.on('admin_recovery_update', onAdminRecoveryUpdate);
 
     const hb = setInterval(() => {
       socket.emit('session_heartbeat', {
@@ -184,10 +222,27 @@ export function TrustSync() {
       socket.off('account_compromised', onCompromised);
       socket.off('access_restored', onRestored);
       socket.off('remediation_applied', onRemediation);
+      socket.off('admin_recovery_update', onAdminRecoveryUpdate);
       socket.disconnect();
       socketRef.current = null;
     };
   }, [isAuthenticated, session?.session_id, token]);
+
+  useEffect(() => {
+    if (!token) return;
+    fetch('/api/admin/notifications', {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => (r.ok ? r.json() : []))
+      .then((notifications) => {
+        const store = useTrustStore.getState();
+        store.clearNotifications();
+        notifications.forEach((notification: any) => store.addNotification(notification));
+      })
+      .catch(() => {
+        /* ignore */
+      });
+  }, [token]);
 
   return null;
 }

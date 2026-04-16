@@ -136,7 +136,8 @@ def _apply_login_risk_context(user, session, request: LoginRequest) -> None:
     if ip_suspicious or location_suspicious:
         session.needs_passkey = True
         session.passkey_due_at = (datetime.now() + timedelta(seconds=5)).isoformat()
-        session.pending_action = None
+        session.pending_action = "passkey_challenge"
+        session.required_verification = "passkey"
     
     if ip_suspicious and location_suspicious:
         session.needs_camera_after_passkey = True
@@ -148,6 +149,12 @@ async def login(request: LoginRequest):
 
     if not user:
         raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    if user.account_restricted:
+        raise HTTPException(
+            status_code=403,
+            detail="This account has been restricted after failed identity verification. Please contact the administrator.",
+        )
 
     if request.password != _expected_password(user):
         raise HTTPException(status_code=401, detail="Invalid credentials")
@@ -188,6 +195,7 @@ async def login(request: LoginRequest):
 
     _apply_login_risk_context(user, session, request)
     session = trust_engine.get_session(session_id) or session
+    trust_engine.enforce_session_policy(session)
 
     return LoginResponse(
         access_token=access_token,
@@ -250,18 +258,17 @@ async def verify_passkey(
     session = trust_engine.get_session(sid)
     if session:
         if body.simulate_failure:
-            session.pending_action = "camera_challenge"
-            session.needs_camera_after_passkey = True
+            session.access_level = "blocked"
+            session.restriction_reason = "passkey_failed"
+            session.block_message = "You have been blocked from access. Please contact the administrator."
             session.passkey_verified = False
         else:
             session.passkey_verified = True
-            if session.needs_camera_after_passkey:
-                session.pending_action = "camera_challenge"
-            else:
-                session.pending_action = None
-                session.trust_score = max(session.trust_score, 85)
-                session.access_level = "full"
-                session.is_compromised = False
+            session.trust_score = max(session.trust_score, 75)
+            session.restriction_reason = None
+            session.block_message = None
+
+        trust_engine.enforce_session_policy(session)
         
         await emit_trust_update(session)
         if session.is_compromised:
@@ -269,9 +276,11 @@ async def verify_passkey(
         
         return {
             "verified": not body.simulate_failure,
-            "requires_camera": session.needs_camera_after_passkey,
+            "requires_camera": bool(session.required_verification == "face" or session.needs_camera_after_passkey),
             "trust_score": session.trust_score,
-            "is_compromised": session.is_compromised
+            "is_compromised": session.is_compromised,
+            "access_level": session.access_level,
+            "block_message": session.block_message,
         }
     
     return {"verified": False, "requires_camera": False}

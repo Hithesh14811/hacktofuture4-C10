@@ -47,6 +47,12 @@ export interface Session {
   camera_verified?: boolean;
   face_fail_attempts?: number;
   passkey_due_at?: string | null;
+  restriction_reason?: string | null;
+  block_message?: string | null;
+  required_verification?: string | null;
+  admin_recovery_required?: boolean;
+  admin_recovery_status?: string | null;
+  admin_recovery_request_id?: string | null;
 }
 
 export interface TrustSignal {
@@ -98,6 +104,8 @@ export interface Notification {
   timestamp: string;
   user_id?: string;
   action_url?: string;
+  request_id?: string;
+  vote_status?: boolean | null;
 }
 
 export type AccessLevel = 'blocked' | 'read_only' | 'limited' | 'standard' | 'full';

@@ -40,6 +40,12 @@ def _session_payload(session) -> Dict[str, Any]:
         "anomalies": session.anomalies,
         "login_time": session.login_time,
         "face_verified_this_session": session.face_verified_this_session,
+        "restriction_reason": session.restriction_reason,
+        "block_message": session.block_message,
+        "required_verification": session.required_verification,
+        "admin_recovery_required": session.admin_recovery_required,
+        "admin_recovery_status": session.admin_recovery_status,
+        "admin_recovery_request_id": session.admin_recovery_request_id,
     }
 
 
@@ -93,6 +99,10 @@ async def broadcast_access_restored(user_id: str, restored_by: str) -> None:
 
 async def broadcast_remediation_applied(payload: Dict[str, Any]) -> None:
     await sio.emit("remediation_applied", payload)
+
+
+async def broadcast_admin_recovery_update(payload: Dict[str, Any]) -> None:
+    await sio.emit("admin_recovery_update", payload)
 
 
 @sio.event

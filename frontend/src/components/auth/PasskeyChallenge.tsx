@@ -10,7 +10,7 @@ type Props = {
 
 export default function PasskeyChallenge({ reason = 'Unusual activity detected â€” verify with your passkey.' }: Props) {
   const { token } = useAuthStore();
-  const { passkeyModalOpen, setPasskeyModalOpen, setCameraChallengeOpen } = useTrustStore();
+  const { passkeyModalOpen, setPasskeyModalOpen, setCameraChallengeOpen, setBlockState } = useTrustStore();
   const [busy, setBusy] = useState(false);
   const [failMode, setFailMode] = useState(false);
   const [passkey, setPasskey] = useState('');
@@ -53,9 +53,13 @@ export default function PasskeyChallenge({ reason = 'Unusual activity detected â
         }
         close();
       } else {
-        setError('Verification failed. Escalating to biometric scan...');
+        setBlockState({
+          blockMessage: data.block_message || 'You have been blocked from access. Please contact the administrator.',
+          restrictionReason: 'passkey_failed',
+          requiredVerification: null,
+        });
+        setError(data.block_message || 'You have been blocked from access. Please contact the administrator.');
         setTimeout(() => {
-          setCameraChallengeOpen(true);
           close();
         }, 1500);
       }

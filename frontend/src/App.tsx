@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/authStore';
 import { AuthBootstrap } from './components/AuthBootstrap';
+import { SecurityOverlay } from './components/SecurityOverlay';
 import { TrustSync } from './components/TrustSync';
 import PasskeyChallenge from './components/auth/PasskeyChallenge';
 import CameraChallengeBanner from './components/CameraChallengeBanner';
@@ -22,7 +23,11 @@ function AuthenticatedDemoMount() {
 }
 
 function ProtectedRoute({ children, requireAdmin = false }: { children: React.ReactNode; requireAdmin?: boolean }) {
-  const { isAuthenticated, user } = useAuthStore();
+  const { isAuthenticated, user, isHydrated } = useAuthStore();
+
+  if (!isHydrated) {
+    return <div className="min-h-screen bg-[#f2f3f3]" />;
+  }
 
   if (!isAuthenticated) {
     return <Navigate to="/" replace />;
@@ -54,6 +59,7 @@ export default function App() {
     <BrowserRouter>
       <AuthBootstrap />
       <TrustSync />
+      <SecurityOverlay />
       <PasskeyChallenge />
       <CameraChallengeBanner />
       <AuthenticatedDemoMount />

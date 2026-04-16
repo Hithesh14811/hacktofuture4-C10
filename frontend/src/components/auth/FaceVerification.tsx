@@ -40,8 +40,6 @@ export default function FaceVerification() {
   const streamRef = useRef<MediaStream | null>(null);
   const [error, setError] = useState('');
   const [modelsLoaded, setModelsLoaded] = useState(false);
-  const [fallbackMode, setFallbackMode] = useState(false);
-  const [fallbackNotice, setFallbackNotice] = useState('');
   const [step, setStep] = useState<LivenessStep>('center');
   const [instruction, setInstruction] = useState('Place your face within the circle');
   const [progress, setProgress] = useState(0);
@@ -67,11 +65,7 @@ export default function FaceVerification() {
         await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
         if (!cancelled) setModelsLoaded(true);
       } catch {
-        if (!cancelled) {
-          setFallbackMode(true);
-          setFallbackNotice('Face AI models could not be loaded. Secure demo verification is available.');
-          setModelsLoaded(true);
-        }
+        if (!cancelled) setError('Face verification models could not be loaded. Refresh and try again.');
       }
     })();
     return () => {
@@ -80,7 +74,7 @@ export default function FaceVerification() {
   }, []);
 
   useEffect(() => {
-    if (!user || !token || !modelsLoaded || fallbackMode) return;
+    if (!user || !token || !modelsLoaded) return;
     (async () => {
       try {
         const r = await fetch(`/api/verify/face/descriptor/${user.id}`, {
@@ -103,7 +97,7 @@ export default function FaceVerification() {
         /* optional */
       }
     })();
-  }, [user, token, modelsLoaded, fallbackMode]);
+  }, [user, token, modelsLoaded]);
 
   useEffect(() => {
     let mounted = true;
@@ -168,7 +162,7 @@ export default function FaceVerification() {
   }, [complete, success, navigate]);
 
   useEffect(() => {
-    if (!modelsLoaded || !cameraReady || error || finishedRef.current || fallbackMode) return;
+    if (!modelsLoaded || !cameraReady || error || finishedRef.current) return;
 
     const detect = async () => {
       if (finishedRef.current) return;
@@ -258,16 +252,24 @@ export default function FaceVerification() {
       if (nextStep === 'complete' && !finishedRef.current) {
         finishedRef.current = true;
 
-        let conf = 0.88;
+        let conf = 0;
         const ref = refDescriptorRef.current;
         if (ref && det.descriptor) {
           const dist = faceapi.euclideanDistance(det.descriptor, ref);
-          conf = Math.max(0, Math.min(1, 1 - dist / 1.2));
+          conf = Math.max(0, Math.min(1, 1 - dist / 0.75));
+        } else {
+          setError('No enrolled face profile was found for this account. Please contact the administrator.');
+          finishedRef.current = false;
+          rafRef.current = requestAnimationFrame(detect);
+          return;
         }
         const verifyResult = await submitVerification(conf, det.descriptor);
 
         if (verifyResult?.error || verifyResult?.warning) {
           const attemptsLeft = verifyResult?.attempts_left;
+          const permanentlyBlocked =
+            verifyResult?.access_level === 'blocked' ||
+            verifyResult?.restriction_reason === 'restricted_identity';
           setError(
             attemptsLeft !== undefined
               ? `${verifyResult.error || verifyResult.warning} Attempts left: ${attemptsLeft}`
@@ -280,8 +282,10 @@ export default function FaceVerification() {
           setProgress(0);
           holdRef.current = 0;
           stepRef.current = 'center';
-          finishedRef.current = false;
-          rafRef.current = requestAnimationFrame(detect);
+          finishedRef.current = permanentlyBlocked;
+          if (!permanentlyBlocked) {
+            rafRef.current = requestAnimationFrame(detect);
+          }
           return;
         }
 
@@ -296,7 +300,7 @@ export default function FaceVerification() {
 
     rafRef.current = requestAnimationFrame(detect);
     return () => cancelAnimationFrame(rafRef.current);
-  }, [modelsLoaded, cameraReady, error, submitVerification, fallbackMode]);
+  }, [modelsLoaded, cameraReady, error, submitVerification]);
 
   const handleAdminSkip = async () => {
     if (!token) return;
@@ -306,18 +310,6 @@ export default function FaceVerification() {
     });
     await refreshSession();
     navigate('/dashboard');
-  };
-
-  const handleFallbackVerification = async () => {
-    setError('');
-    const verifyResult = await submitVerification(0.92, null);
-    if (verifyResult?.error || verifyResult?.warning) {
-      setError(verifyResult.error || verifyResult.warning);
-      return;
-    }
-    setComplete(true);
-    setSuccess(true);
-    setInstruction('Identity Confirmed');
   };
 
   return (
@@ -362,12 +354,6 @@ export default function FaceVerification() {
           </div>
 
           <div className="space-y-6 text-center">
-            {fallbackMode && (
-              <div className="rounded-sm border border-[#e47911]/30 bg-[#fff4e5] px-4 py-3 text-xs font-bold text-[#e47911]">
-                {fallbackNotice}
-              </div>
-            )}
-
             <div className="h-12">
               <AnimatePresence mode="wait">
                 <motion.div
@@ -382,7 +368,7 @@ export default function FaceVerification() {
               </AnimatePresence>
             </div>
 
-            {!complete && !fallbackMode && (
+            {!complete && (
               <div className="space-y-4">
                 <div className="flex items-center justify-center gap-8">
                   <div className="flex flex-col items-center gap-2">
@@ -414,22 +400,6 @@ export default function FaceVerification() {
                     animate={{ width: `${progress}%` }}
                   />
                 </div>
-              </div>
-            )}
-
-            {!complete && fallbackMode && (
-              <div className="space-y-4">
-                <p className="text-sm text-[#565959]">
-                  Camera access is still required. When you are centered in frame, continue with the secure fallback check.
-                </p>
-                <button
-                  type="button"
-                  onClick={handleFallbackVerification}
-                  disabled={!cameraReady}
-                  className="rounded-sm bg-[#ff9900] px-6 py-2 text-sm font-bold text-[#11181C] hover:bg-[#e68a00] disabled:opacity-50"
-                >
-                  Complete Face Verification
-                </button>
               </div>
             )}
 

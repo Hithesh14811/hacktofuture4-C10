@@ -5,9 +5,13 @@ import { syncSessionToStores } from '../store/sessionSync';
 /** Hydrate user/session from JWT on refresh (token persisted). */
 export function AuthBootstrap() {
   const token = useAuthStore((s) => s.token);
+  const setHydrated = useAuthStore((s) => s.setHydrated);
 
   useEffect(() => {
-    if (!token) return;
+    if (!token) {
+      setHydrated(true);
+      return;
+    }
 
     fetch('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } })
       .then((r) => {
@@ -21,12 +25,14 @@ export function AuthBootstrap() {
           isAuthenticated: true,
         });
         syncSessionToStores(data.session, data.user);
+        setHydrated(true);
       })
       .catch(() => {
         syncSessionToStores(null);
         useAuthStore.getState().logout();
+        setHydrated(true);
       });
-  }, [token]);
+  }, [token, setHydrated]);
 
   return null;
 }

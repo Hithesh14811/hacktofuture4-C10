@@ -28,6 +28,12 @@ interface TrustState {
   needsPasskey: boolean;
   faceFailAttempts: number;
   maxFaceAttempts: number;
+  blockMessage: string | null;
+  restrictionReason: string | null;
+  requiredVerification: string | null;
+  adminRecoveryRequired: boolean;
+  adminRecoveryStatus: string | null;
+  adminRecoveryRequestId: string | null;
 
   setTrustScore: (score: number) => void;
   setIPStatus: (status: string) => void;
@@ -46,6 +52,14 @@ interface TrustState {
   setNeedsPasskey: (needs: boolean) => void;
   incrementFaceFailAttempts: () => void;
   setFaceFailAttempts: (count: number) => void;
+  setBlockState: (payload: {
+    blockMessage?: string | null;
+    restrictionReason?: string | null;
+    requiredVerification?: string | null;
+    adminRecoveryRequired?: boolean;
+    adminRecoveryStatus?: string | null;
+    adminRecoveryRequestId?: string | null;
+  }) => void;
   resetFaceFailAttempts: () => void;
   reset: () => void;
 }
@@ -67,6 +81,12 @@ export const useTrustStore = create<TrustState>()((set) => ({
   needsPasskey: false,
   faceFailAttempts: 0,
   maxFaceAttempts: 3,
+  blockMessage: null,
+  restrictionReason: null,
+  requiredVerification: null,
+  adminRecoveryRequired: false,
+  adminRecoveryStatus: null,
+  adminRecoveryRequestId: null,
 
   setTrustScore: (score) => set({ trustScore: score }),
   setIPStatus: (status) => set({ ipStatus: status }),
@@ -87,6 +107,7 @@ export const useTrustStore = create<TrustState>()((set) => ({
   setNeedsPasskey: (needs) => set({ needsPasskey: needs }),
   incrementFaceFailAttempts: () => set((state) => ({ faceFailAttempts: state.faceFailAttempts + 1 })),
   setFaceFailAttempts: (count) => set({ faceFailAttempts: count }),
+  setBlockState: (payload) => set(payload),
   resetFaceFailAttempts: () => set({ faceFailAttempts: 0 }),
   reset: () => set({
     trustScore: 100,
@@ -104,5 +125,11 @@ export const useTrustStore = create<TrustState>()((set) => ({
     passkeyDueAt: null,
     needsPasskey: false,
     faceFailAttempts: 0,
+    blockMessage: null,
+    restrictionReason: null,
+    requiredVerification: null,
+    adminRecoveryRequired: false,
+    adminRecoveryStatus: null,
+    adminRecoveryRequestId: null,
   }),
 }));

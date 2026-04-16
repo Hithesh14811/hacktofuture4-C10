@@ -36,8 +36,12 @@ async def verify_face(request: FaceVerifyRequest):
         session.trust_score = max(session.trust_score, 90)
         session.access_level = "full"
         session.is_compromised = False
+        session.restriction_reason = None
+        session.block_message = None
+        session.required_verification = None
         if request.face_descriptor:
             trust_engine.update_user_face_enrollment(session.user_id, list(request.face_descriptor))
+        trust_engine.enforce_session_policy(session)
         result["face_passed"] = True
         await _emit_after_session(request.session_id)
         return result
@@ -46,10 +50,15 @@ async def verify_face(request: FaceVerifyRequest):
         session.face_fail_attempts += 1
         if session.face_fail_attempts >= 3:
             result = trust_engine.add_trust_signal(request.session_id, "face_match_fail")
-            session.pending_action = None
+            trust_engine.restrict_session(
+                request.session_id,
+                "restricted_identity",
+                "Identity verification failed. Your account has been restricted. Please contact the administrator.",
+            )
             await _emit_after_session(request.session_id)
             return {"error": "Face verification failed. Account is now restricted.", **result}
         session.pending_action = "camera_challenge"
+        session.required_verification = "face"
         await _emit_after_session(request.session_id)
         return {
             "warning": "Face mismatch. Try again.",
@@ -61,10 +70,15 @@ async def verify_face(request: FaceVerifyRequest):
         session.face_fail_attempts += 1
         if session.face_fail_attempts >= 3:
             result = trust_engine.add_trust_signal(request.session_id, "face_match_fail")
-            session.pending_action = None
+            trust_engine.restrict_session(
+                request.session_id,
+                "restricted_identity",
+                "Identity verification failed. Your account has been restricted. Please contact the administrator.",
+            )
             await _emit_after_session(request.session_id)
             return {"error": "Face verification failed. Account is now restricted.", **result}
         session.pending_action = "camera_challenge"
+        session.required_verification = "face"
         await _emit_after_session(request.session_id)
         return {
             "warning": "Uncertain face match. Try again.",

@@ -134,6 +134,22 @@ export function TopBar() {
 
   const unreadCount = notifications.filter(n => n.severity === 'critical' || n.severity === 'warning').length;
 
+  const submitAdminRecoveryVote = async (requestId: string, approve: boolean) => {
+    if (!token) return;
+    await fetch('/api/admin/recovery/vote', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        request_id: requestId,
+        approve,
+      }),
+    });
+    setShowNotifications(false);
+  };
+
   return (
     <header className="h-14 bg-[#232f3e] border-b border-[#37475a] flex items-center justify-between px-6">
       <div className="flex items-center gap-6">
@@ -227,6 +243,29 @@ export function TopBar() {
                           <p className="text-xs text-[#879596]">
                             {new Date(notif.timestamp).toLocaleTimeString()}
                           </p>
+                          {notif.request_id && user?.role !== 'Administrator' && notif.vote_status == null && (
+                            <div className="mt-2 flex gap-2">
+                              <button
+                                type="button"
+                                onClick={() => submitAdminRecoveryVote(notif.request_id!, true)}
+                                className="rounded bg-[#00a86b] px-2 py-1 text-[10px] font-bold text-white"
+                              >
+                                Recover
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => submitAdminRecoveryVote(notif.request_id!, false)}
+                                className="rounded bg-[#d0021b] px-2 py-1 text-[10px] font-bold text-white"
+                              >
+                                Deny
+                              </button>
+                            </div>
+                          )}
+                          {notif.request_id && notif.vote_status != null && (
+                            <p className="mt-2 text-[10px] font-bold text-[#879596]">
+                              Vote recorded: {notif.vote_status ? 'Recover' : 'Deny'}
+                            </p>
+                          )}
                         </div>
                       </div>
                     </div>

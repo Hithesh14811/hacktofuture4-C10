@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LogOut, CheckCircle, Camera } from 'lucide-react';
+import { RotateCcw, Camera, Trash2, LogOut } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useTrustStore } from '../../store/trustStore';
 import { TopBar } from '../dashboard/TopBar';
@@ -16,6 +16,7 @@ export default function AdminPanel() {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
   const [enrollingUser, setEnrollingUser] = useState<User | null>(null);
+  const [busyUserId, setBusyUserId] = useState<string | null>(null);
 
   const isAdmin = user?.role === 'Administrator';
 
@@ -43,16 +44,19 @@ export default function AdminPanel() {
   };
 
   const restoreAccess = async (userId: string) => {
+    setBusyUserId(userId);
     try {
       const res = await fetch(`/api/admin/restore/${userId}`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
-        loadData();
+        await loadData();
       }
     } catch (error) {
       console.error('Failed to restore access:', error);
+    } finally {
+      setBusyUserId(null);
     }
   };
 
@@ -74,7 +78,7 @@ export default function AdminPanel() {
     setEnrollingUser(user);
   };
 
-  const handleEnrollCompleted = async (descriptor: Float32Array | null) => {
+  const handleEnrollCompleted = async (descriptor: Float32Array) => {
     if (!enrollingUser) return;
     try {
       const res = await fetch(`/api/admin/users/${enrollingUser.id}/face-enroll`, {
@@ -92,6 +96,23 @@ export default function AdminPanel() {
       console.error('Failed to enroll face:', error);
     } finally {
         setEnrollingUser(null);
+    }
+  };
+
+  const resetFaceEnrollment = async (targetUser: User) => {
+    setBusyUserId(targetUser.id);
+    try {
+      const res = await fetch(`/api/admin/users/${targetUser.id}/face-enroll`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        await loadData();
+      }
+    } catch (error) {
+      console.error('Failed to reset face enrollment:', error);
+    } finally {
+      setBusyUserId(null);
     }
   };
 
@@ -190,11 +211,12 @@ export default function AdminPanel() {
                         </td>
                         <td className="p-4">
                           <div className="flex gap-2">
-                            {u.role !== 'Administrator' && !u.face_enrolled && (
+                            {u.role !== 'Administrator' && (
                               <button
                                 onClick={() => handleStartEnrollment(u)}
                                 className="p-2 hover:bg-[#f2f3f3] rounded-sm text-[#565959] hover:text-[#0073bb]"
-                                title="Enroll Face (Admin Scan)"
+                                title={u.face_enrolled ? 'Re-enroll Face (Admin Scan)' : 'Enroll Face (Admin Scan)'}
+                                disabled={busyUserId === u.id}
                               >
                                 <Camera className="w-4 h-4" />
                               </button>
@@ -203,15 +225,20 @@ export default function AdminPanel() {
                               onClick={() => restoreAccess(u.id)}
                               className="p-2 hover:bg-[#f2f3f3] rounded-sm text-[#565959] hover:text-[#00ff88]"
                               title="Restore Access"
+                              disabled={busyUserId === u.id}
                             >
-                              <CheckCircle className="w-4 h-4" />
+                              <RotateCcw className="w-4 h-4" />
                             </button>
-                            <button 
-                              className="p-2 hover:bg-[#f2f3f3] rounded-sm text-[#565959] hover:text-[#d0021b]"
-                              title="Delete Identity"
-                            >
-                              <LogOut className="w-4 h-4" />
-                            </button>
+                            {u.role !== 'Administrator' && (
+                              <button 
+                                onClick={() => resetFaceEnrollment(u)}
+                                className="p-2 hover:bg-[#f2f3f3] rounded-sm text-[#565959] hover:text-[#d0021b] disabled:opacity-40"
+                                title="Delete Face Enrollment"
+                                disabled={busyUserId === u.id}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>

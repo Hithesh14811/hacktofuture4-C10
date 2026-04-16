@@ -23,6 +23,14 @@ export function syncSessionToStores(session: Session | null, user?: User | null)
   trustStore.setPasskeyDueAt(session.passkey_due_at || null);
   trustStore.setNeedsPasskey(Boolean(session.needs_passkey && !session.passkey_verified));
   trustStore.setFaceFailAttempts(session.face_fail_attempts || 0);
+  trustStore.setBlockState({
+    blockMessage: session.block_message || null,
+    restrictionReason: session.restriction_reason || null,
+    requiredVerification: session.required_verification || null,
+    adminRecoveryRequired: Boolean(session.admin_recovery_required),
+    adminRecoveryStatus: session.admin_recovery_status || null,
+    adminRecoveryRequestId: session.admin_recovery_request_id || null,
+  });
 
   if (session.is_compromised && activeUser && session.user_id === activeUser.id) {
     trustStore.setCompromisedAccount({
