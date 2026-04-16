@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Server, Settings, Lock, Eye, Database, Cloud, Code, HardDrive, Shield } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
+import { postRuntimeAccess } from '../../lib/telemetry';
 import { useTrustStore } from '../../store/trustStore';
 import { TopBar } from '../dashboard/TopBar';
 import { Sidebar } from '../dashboard/Sidebar';
@@ -28,7 +29,7 @@ const ALL_SERVICES: Service[] = [
 ];
 
 export default function ServicesPage() {
-  const { user } = useAuthStore();
+  const { user, token } = useAuthStore();
   const { accessLevel, trustScore } = useTrustStore();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
@@ -39,6 +40,17 @@ export default function ServicesPage() {
 
   const isLocked = accessLevel === 'blocked' || accessLevel === 'read_only' || trustScore < 40;
   const userServices = ALL_SERVICES.filter((s) => canAccess(s.privileged));
+
+  const handleServiceAccess = async (service: Service, action: 'console_access' | 'service_settings') => {
+    if (!token) return;
+    await postRuntimeAccess(token, {
+      route: '/dashboard/services',
+      resource: service.id,
+      action,
+      data_volume_read: action === 'console_access' ? 6 : 2,
+      privileged: service.privileged.includes('Administrator') || service.privileged.includes('DevOps Engineer'),
+    }).catch(() => undefined);
+  };
 
   return (
     <div className="flex h-screen flex-col bg-[#f2f3f3] text-[#11181C]">
@@ -91,6 +103,9 @@ export default function ServicesPage() {
                   <div className="flex gap-3">
                     <button
                       disabled={isLocked}
+                      onClick={() => {
+                        void handleServiceAccess(service, 'console_access');
+                      }}
                       className={`flex-1 rounded-sm py-2 text-sm font-bold transition-colors ${
                         isLocked
                           ? 'cursor-not-allowed border border-[#eaeded] bg-[#f2f3f3] text-[#879596]'
@@ -101,6 +116,9 @@ export default function ServicesPage() {
                     </button>
                     <button
                       disabled={isLocked || !canAccess(['Administrator', 'DevOps Engineer'])}
+                      onClick={() => {
+                        void handleServiceAccess(service, 'service_settings');
+                      }}
                       className={`rounded-sm border p-2 transition-colors ${
                         isLocked || !canAccess(['Administrator', 'DevOps Engineer'])
                           ? 'cursor-not-allowed border-[#eaeded] bg-[#f2f3f3] text-[#879596]'

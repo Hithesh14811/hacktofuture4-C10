@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Shield, Lock, AlertCircle } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
+import { getDeviceContext } from '../../lib/telemetry';
 import { syncSessionToStores } from '../../store/sessionSync';
 
 type LocationOption = { label: string; city: string; country: string; lat: number; lon: number };
@@ -153,6 +154,7 @@ export default function LoginPage() {
           mock_ip: chosenIp?.ip,
           mock_ip_status: chosenIp?.status,
           mock_location: chosenLocation,
+          device_context: getDeviceContext('/'),
         }),
       });
 

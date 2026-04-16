@@ -11,6 +11,17 @@ export interface CompromisedInfo {
 interface TrustState {
   trustScore: number;
   baselineScore: number;
+  modelScore: number;
+  modelRisk: number;
+  modelConfidence: number;
+  modelAction: string;
+  modelName: string;
+  modelVersion: string;
+  modelLoaded: boolean;
+  modelReasons: string[];
+  telemetryState: Record<string, unknown>;
+  recentResources: string[];
+  apiCallCount: number;
   ipStatus: string;
   location: { city: string; country: string };
   accessLevel: string;
@@ -36,6 +47,19 @@ interface TrustState {
   adminRecoveryRequestId: string | null;
 
   setTrustScore: (score: number) => void;
+  setModelState: (payload: {
+    modelScore?: number;
+    modelRisk?: number;
+    modelConfidence?: number;
+    modelAction?: string;
+    modelName?: string;
+    modelVersion?: string;
+    modelLoaded?: boolean;
+    modelReasons?: string[];
+    telemetryState?: Record<string, unknown>;
+    recentResources?: string[];
+    apiCallCount?: number;
+  }) => void;
   setIPStatus: (status: string) => void;
   setLocation: (location: { city: string; country: string }) => void;
   setAccessLevel: (level: string) => void;
@@ -67,6 +91,17 @@ interface TrustState {
 export const useTrustStore = create<TrustState>()((set) => ({
   trustScore: 100,
   baselineScore: 100,
+  modelScore: 50,
+  modelRisk: 50,
+  modelConfidence: 0,
+  modelAction: 'allow',
+  modelName: 'builtin_behavior_adapter',
+  modelVersion: 'builtin',
+  modelLoaded: false,
+  modelReasons: [],
+  telemetryState: {},
+  recentResources: [],
+  apiCallCount: 0,
   ipStatus: 'CLEAN',
   location: { city: 'Unknown', country: 'Unknown' },
   accessLevel: 'full',
@@ -89,6 +124,19 @@ export const useTrustStore = create<TrustState>()((set) => ({
   adminRecoveryRequestId: null,
 
   setTrustScore: (score) => set({ trustScore: score }),
+  setModelState: (payload) => set((state) => ({
+    modelScore: payload.modelScore ?? state.modelScore,
+    modelRisk: payload.modelRisk ?? state.modelRisk,
+    modelConfidence: payload.modelConfidence ?? state.modelConfidence,
+    modelAction: payload.modelAction ?? state.modelAction,
+    modelName: payload.modelName ?? state.modelName,
+    modelVersion: payload.modelVersion ?? state.modelVersion,
+    modelLoaded: payload.modelLoaded ?? state.modelLoaded,
+    modelReasons: payload.modelReasons ?? state.modelReasons,
+    telemetryState: payload.telemetryState ?? state.telemetryState,
+    recentResources: payload.recentResources ?? state.recentResources,
+    apiCallCount: payload.apiCallCount ?? state.apiCallCount,
+  })),
   setIPStatus: (status) => set({ ipStatus: status }),
   setLocation: (location) => set({ location }),
   setAccessLevel: (level) => set({ accessLevel: level }),
@@ -112,6 +160,17 @@ export const useTrustStore = create<TrustState>()((set) => ({
   reset: () => set({
     trustScore: 100,
     baselineScore: 100,
+    modelScore: 50,
+    modelRisk: 50,
+    modelConfidence: 0,
+    modelAction: 'allow',
+    modelName: 'builtin_behavior_adapter',
+    modelVersion: 'builtin',
+    modelLoaded: false,
+    modelReasons: [],
+    telemetryState: {},
+    recentResources: [],
+    apiCallCount: 0,
     ipStatus: 'CLEAN',
     location: { city: 'Unknown', country: 'Unknown' },
     accessLevel: 'full',

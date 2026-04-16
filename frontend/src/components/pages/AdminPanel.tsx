@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { RotateCcw, Camera, Trash2, LogOut, Lock, LockOpen } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
@@ -11,21 +11,16 @@ import type { User, Session } from '../../types';
 export default function AdminPanel() {
   const { user, token } = useAuthStore();
   const { notifications } = useTrustStore();
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
   const [sessions, setSessions] = useState<Session[]>([]);
-  const [loading, setLoading] = useState(true);
   const [enrollingUser, setEnrollingUser] = useState<User | null>(null);
   const [busyUserId, setBusyUserId] = useState<string | null>(null);
 
   const isAdmin = user?.role === 'Administrator';
 
-  useEffect(() => {
-    if (!isAdmin || !token) return;
-    loadData();
-  }, [isAdmin, token]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
+    if (!token) return;
     try {
       const headers = { Authorization: `Bearer ${token}` };
       
@@ -38,10 +33,13 @@ export default function AdminPanel() {
       if (sessionsRes.ok) setSessions(await sessionsRes.json());
     } catch (error) {
       console.error('Failed to load admin data:', error);
-    } finally {
-      setLoading(false);
     }
-  };
+  }, [token]);
+
+  useEffect(() => {
+    if (!isAdmin || !token) return;
+    void loadData();
+  }, [isAdmin, loadData, token]);
 
   const restoreAccess = async (userId: string) => {
     setBusyUserId(userId);
@@ -71,7 +69,7 @@ export default function AdminPanel() {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
-        loadData();
+        void loadData();
       }
     } catch (error) {
       console.error('Failed to terminate session:', error);

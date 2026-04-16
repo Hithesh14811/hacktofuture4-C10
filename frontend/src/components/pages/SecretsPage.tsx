@@ -1,7 +1,8 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Key, Eye, EyeOff, Lock, Shield, AlertTriangle } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
+import { postRuntimeAccess } from '../../lib/telemetry';
 import { useTrustStore } from '../../store/trustStore';
 import { TopBar } from '../dashboard/TopBar';
 import { Sidebar } from '../dashboard/Sidebar';
@@ -17,9 +18,9 @@ const SECRETS = [
 const DENIED_ROLES = ['Data Analyst', 'Service Principal'];
 
 export default function SecretsPage() {
-  const { user } = useAuthStore();
+  const { user, token } = useAuthStore();
   const { trustScore, accessLevel } = useTrustStore();
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed] = useState(false);
   const [revealed, setRevealed] = useState<Record<string, boolean>>({});
 
   const noAccess = useMemo(() => {
@@ -27,10 +28,10 @@ export default function SecretsPage() {
     return DENIED_ROLES.includes(user.role);
   }, [user]);
 
-  const canView = (roles: string[]) => {
+  const canView = useCallback((roles: string[]) => {
     if (!user) return false;
     return roles.includes(user.role);
-  };
+  }, [user]);
 
   const isRestricted = trustScore < 40 || accessLevel === 'blocked' || accessLevel === 'read_only';
 
@@ -40,11 +41,20 @@ export default function SecretsPage() {
       return SECRETS.filter((s) => s.name.includes('staging'));
     }
     return SECRETS.filter((s) => canView(s.roles));
-  }, [user]);
+  }, [user, canView]);
 
   const toggleReveal = (id: string) => {
     if (isRestricted) return;
     setRevealed((prev) => ({ ...prev, [id]: !prev[id] }));
+    if (token) {
+      void postRuntimeAccess(token, {
+        route: '/dashboard/secrets',
+        resource: `secret:${id}`,
+        action: revealed[id] ? 'hide_secret' : 'reveal_secret',
+        data_volume_read: 12,
+        privileged: true,
+      }).catch(() => undefined);
+    }
   };
 
   if (noAccess) {

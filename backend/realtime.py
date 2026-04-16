@@ -46,6 +46,17 @@ def _session_payload(session) -> Dict[str, Any]:
         "admin_recovery_required": session.admin_recovery_required,
         "admin_recovery_status": session.admin_recovery_status,
         "admin_recovery_request_id": session.admin_recovery_request_id,
+        "model_score": session.model_score,
+        "model_risk": session.model_risk,
+        "model_confidence": session.model_confidence,
+        "model_action": session.model_action,
+        "model_name": session.model_name,
+        "model_version": session.model_version,
+        "model_loaded": session.model_loaded,
+        "model_reasons": session.model_reasons,
+        "telemetry_state": session.telemetry_state,
+        "recent_resources": session.recent_resources,
+        "api_call_count": session.api_call_count,
     }
 
 

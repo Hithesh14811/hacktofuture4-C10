@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from realtime import sio, register_lifespan_handlers
-from routers import auth, trust, face, admin, blast_radius, remediation, analyze
+from routers import auth, trust, face, admin, blast_radius, remediation, analyze, telemetry
 
 fastapi_app = FastAPI(title="TRUSTNET API", version="2.4.1")
 
@@ -24,6 +24,7 @@ fastapi_app.include_router(admin.router, prefix="/api")
 fastapi_app.include_router(blast_radius.router, prefix="/api")
 fastapi_app.include_router(remediation.router, prefix="/api")
 fastapi_app.include_router(analyze.router, prefix="/api")
+fastapi_app.include_router(telemetry.router, prefix="/api")
 
 
 @fastapi_app.get("/")

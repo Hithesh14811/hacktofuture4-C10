@@ -59,6 +59,13 @@ export default function IncidentResponse() {
     return Array.from(ids);
   }, [analysis, compromisedGraphId, edges]);
 
+  const riskLevel = useMemo(() => {
+    if (trustScore >= 80) return 'Low';
+    if (trustScore >= 60) return 'Medium';
+    if (trustScore >= 40) return 'High';
+    return 'Critical';
+  }, [trustScore]);
+
   const analyzeNode = useCallback(async (nodeId: string) => {
     try {
       const res = await fetch('/api/blast-radius/analyze', {
@@ -189,13 +196,6 @@ export default function IncidentResponse() {
   const hh = String(Math.floor(sessionDuration / 3600)).padStart(2, '0');
   const mm = String(Math.floor((sessionDuration % 3600) / 60)).padStart(2, '0');
   const ss = String(sessionDuration % 60).padStart(2, '0');
-
-  const riskLevel = useMemo(() => {
-    if (trustScore >= 80) return 'Low';
-    if (trustScore >= 60) return 'Medium';
-    if (trustScore >= 40) return 'High';
-    return 'Critical';
-  }, [trustScore]);
 
   return (
     <div className="flex h-screen flex-col bg-[#f2f3f3] text-[#11181C]">

@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime
 from typing import Optional, List, Dict, Any
 from models import (
-    User, Session, TrustSignal, SessionTrustState,
+    User, Session, TrustSignal, SessionTrustState, DeviceContext,
 )
 
 USERS_FILE = os.path.join(os.path.dirname(__file__), "..", "data", "users.json")
@@ -111,6 +111,20 @@ def create_session(
             "lon": float(loc.get("lon", 0.0)),
         },
         face_verified_this_session=user.face_enrolled,
+        model_score=50,
+        model_risk=50,
+        model_confidence=0.0,
+        model_action="allow",
+        model_name="builtin_behavior_adapter",
+        model_version="builtin",
+        model_loaded=False,
+        telemetry_state={
+            "samples": 0,
+            "resources": [],
+            "routes": [],
+            "last_route": "",
+            "last_resource": "",
+        },
     )
     enforce_session_policy(session)
     _sessions[session_id] = session
@@ -298,6 +312,102 @@ def add_trust_signal(session_id: str, signal_type: str) -> Dict[str, Any]:
         "anomalies": session.anomalies,
         "access_level": session.access_level,
     }
+
+
+def apply_model_assessment(session_id: str, assessment: Dict[str, Any], telemetry_summary: Optional[Dict[str, Any]] = None) -> Optional[Session]:
+    session = get_session(session_id)
+    if not session:
+        return None
+
+    previous_risk = session.model_risk
+    session.model_score = int(assessment.get("score", session.model_score))
+    session.model_risk = int(assessment.get("risk", session.model_risk))
+    session.model_confidence = float(assessment.get("confidence", session.model_confidence))
+    session.model_action = str(assessment.get("action", session.model_action))
+    session.model_name = str(assessment.get("model_name", session.model_name))
+    session.model_version = str(assessment.get("model_version", session.model_version))
+    session.model_loaded = bool(assessment.get("model_loaded", session.model_loaded))
+    session.model_reasons = [str(reason) for reason in assessment.get("reasons", [])][:4]
+    if telemetry_summary is not None:
+        session.telemetry_state = telemetry_summary
+    session.last_updated = datetime.now().isoformat()
+
+    delta_risk = session.model_risk - previous_risk
+    penalty = 0
+    if session.model_risk >= 90:
+        penalty = 30
+    elif session.model_risk >= 75:
+        penalty = 18
+    elif session.model_risk >= 60:
+        penalty = 10
+    elif session.model_risk <= 20 and session.trust_score < 96:
+        penalty = -3
+
+    if delta_risk > 10:
+        penalty += 4
+
+    if penalty != 0:
+        session.trust_score = max(0, min(100, session.trust_score - penalty))
+
+    if session.model_risk >= 70:
+        session.is_compromised = True
+        reason = session.model_reasons[0] if session.model_reasons else "Behavior model flagged this session"
+        if reason not in session.anomalies:
+            session.anomalies.append(reason)
+
+    session.access_level = compute_access_level(
+        session.trust_score, session.user.privilege_score if session.user else 70
+    )
+    enforce_session_policy(session)
+    return session
+
+
+def update_session_device_context(session_id: str, context: Dict[str, Any]) -> Optional[Session]:
+    session = get_session(session_id)
+    if not session:
+        return None
+    session.device_context = DeviceContext(**{**session.device_context.model_dump(), **context})
+    session.last_updated = datetime.now().isoformat()
+    return session
+
+
+def record_runtime_access(
+    session_id: str,
+    route: str,
+    resource: str,
+    data_volume_read: float = 0.0,
+    data_volume_written: float = 0.0,
+) -> Optional[Session]:
+    session = get_session(session_id)
+    if not session:
+        return None
+
+    state = dict(session.telemetry_state or {})
+    resources = list(state.get("resources", []))
+    routes = list(state.get("routes", []))
+    if resource:
+        resources.append(resource)
+    if route:
+        routes.append(route)
+
+    unique_resources = list(dict.fromkeys(resources[-20:]))
+    unique_routes = list(dict.fromkeys(routes[-20:]))
+    state.update(
+        {
+            "samples": int(state.get("samples", 0)),
+            "resources": unique_resources,
+            "routes": unique_routes,
+            "last_route": route,
+            "last_resource": resource,
+            "data_volume_read": round(float(state.get("data_volume_read", 0.0)) + data_volume_read, 2),
+            "data_volume_written": round(float(state.get("data_volume_written", 0.0)) + data_volume_written, 2),
+        }
+    )
+    session.telemetry_state = state
+    session.recent_resources = unique_resources
+    session.api_call_count += 1
+    session.last_updated = datetime.now().isoformat()
+    return session
 
 
 def inject_demo_scenario(session_id: str, scenario: str) -> Dict[str, Any]:

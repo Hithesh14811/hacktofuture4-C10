@@ -13,6 +13,7 @@ class GraphService:
     def __init__(self):
         self.graph = nx.DiGraph()
         self.remediation_history: List[Dict[str, Any]] = []
+        self.runtime_access_log: List[Dict[str, Any]] = []
         self._load_graph()
     
     def _load_graph(self):
@@ -32,7 +33,14 @@ class GraphService:
                     self.graph.add_edge(edge["source"], edge["target"], **edge)
     
     def get_nodes(self) -> List[Dict[str, Any]]:
-        return [dict(self.graph.nodes[node]) for node in self.graph.nodes()]
+        return [
+            {
+                **dict(self.graph.nodes[node]),
+                "activity_count": self.graph.nodes[node].get("activity_count", 0),
+                "last_accessed": self.graph.nodes[node].get("last_accessed"),
+            }
+            for node in self.graph.nodes()
+        ]
     
     def get_edges(self) -> List[Dict[str, Any]]:
         return [
@@ -135,6 +143,43 @@ class GraphService:
             "applied_by": applied_by,
             "timestamp": datetime.now().isoformat()
         }
+
+    def record_access(self, identity_node_id: str, resource_node_id: str, action: str, session_id: str) -> None:
+        timestamp = datetime.now().isoformat()
+        self.runtime_access_log.append(
+            {
+                "identity_node_id": identity_node_id,
+                "resource_node_id": resource_node_id,
+                "action": action,
+                "session_id": session_id,
+                "timestamp": timestamp,
+            }
+        )
+        self.runtime_access_log = self.runtime_access_log[-200:]
+
+        for node_id in (identity_node_id, resource_node_id):
+            if node_id in self.graph.nodes:
+                node = self.graph.nodes[node_id]
+                node["activity_count"] = int(node.get("activity_count", 0)) + 1
+                node["last_accessed"] = timestamp
+
+        if identity_node_id in self.graph.nodes and resource_node_id in self.graph.nodes:
+            if self.graph.has_edge(identity_node_id, resource_node_id):
+                edge = self.graph.edges[identity_node_id, resource_node_id]
+                edge["runtime_hits"] = int(edge.get("runtime_hits", 0)) + 1
+                edge["last_accessed"] = timestamp
+            else:
+                self.graph.add_edge(
+                    identity_node_id,
+                    resource_node_id,
+                    id=f"runtime-{identity_node_id}-{resource_node_id}-{action}",
+                    type="runtime_access",
+                    action=action,
+                    severity="medium",
+                    label=f"runtime:{action}",
+                    runtime_hits=1,
+                    last_accessed=timestamp,
+                )
     
     def get_hops_to_admin(self, start_node: str) -> int:
         """Return the shortest number of hops from start_node to any admin node.
@@ -160,9 +205,13 @@ class GraphService:
     def reset_graph(self):
         self.graph.clear()
         self._load_graph()
+        self.runtime_access_log = []
     
     def get_remediation_history(self) -> List[Dict[str, Any]]:
         return self.remediation_history
+
+    def get_runtime_access_log(self) -> List[Dict[str, Any]]:
+        return self.runtime_access_log
 
 
 graph_service = GraphService()

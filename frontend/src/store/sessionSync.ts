@@ -12,6 +12,19 @@ export function syncSessionToStores(session: Session | null, user?: User | null)
 
   const trustStore = useTrustStore.getState();
   trustStore.setTrustScore(session.trust_score);
+  trustStore.setModelState({
+    modelScore: session.model_score ?? 50,
+    modelRisk: session.model_risk ?? 50,
+    modelConfidence: session.model_confidence ?? 0,
+    modelAction: session.model_action ?? 'allow',
+    modelName: session.model_name ?? 'builtin_behavior_adapter',
+    modelVersion: session.model_version ?? 'builtin',
+    modelLoaded: Boolean(session.model_loaded),
+    modelReasons: session.model_reasons ?? [],
+    telemetryState: session.telemetry_state ?? {},
+    recentResources: session.recent_resources ?? [],
+    apiCallCount: session.api_call_count ?? 0,
+  });
   trustStore.setIPStatus(session.ip_status);
   trustStore.setLocation({
     city: session.location?.city || 'Unknown',

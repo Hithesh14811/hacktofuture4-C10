@@ -1,1 +1,2 @@
-from . import trust_engine, graph_service, ip_analyzer
+from . import graph_service, ip_analyzer, trust_engine
+from .rl_model_service import rl_model_service

@@ -253,7 +253,7 @@ export default function AdminFaceCapture({ userName, onEnroll, onCancel }: Admin
 
     rafRef.current = requestAnimationFrame(detect);
     return () => cancelAnimationFrame(rafRef.current);
-  }, [cameraReady, loading, modelsLoaded, success]);
+  }, [cameraReady, loading, modelsLoaded, onEnroll, success]);
 
   return (
     <motion.div

@@ -59,6 +59,17 @@ export function TrustSync() {
       admin_recovery_required?: boolean;
       admin_recovery_status?: string | null;
       admin_recovery_request_id?: string | null;
+      model_score?: number;
+      model_risk?: number;
+      model_confidence?: number;
+      model_action?: string;
+      model_name?: string;
+      model_version?: string;
+      model_loaded?: boolean;
+      model_reasons?: string[];
+      telemetry_state?: Record<string, unknown>;
+      recent_resources?: string[];
+      api_call_count?: number;
     }) => {
       const authState = useAuthStore.getState();
       const mySession = authState.session;
@@ -88,6 +99,17 @@ export function TrustSync() {
             admin_recovery_required: p.admin_recovery_required ?? mySession.admin_recovery_required,
             admin_recovery_status: p.admin_recovery_status ?? mySession.admin_recovery_status,
             admin_recovery_request_id: p.admin_recovery_request_id ?? mySession.admin_recovery_request_id,
+            model_score: p.model_score ?? mySession.model_score,
+            model_risk: p.model_risk ?? mySession.model_risk,
+            model_confidence: p.model_confidence ?? mySession.model_confidence,
+            model_action: p.model_action ?? mySession.model_action,
+            model_name: p.model_name ?? mySession.model_name,
+            model_version: p.model_version ?? mySession.model_version,
+            model_loaded: p.model_loaded ?? mySession.model_loaded,
+            model_reasons: p.model_reasons ?? mySession.model_reasons,
+            telemetry_state: p.telemetry_state ?? mySession.telemetry_state,
+            recent_resources: p.recent_resources ?? mySession.recent_resources,
+            api_call_count: p.api_call_count ?? mySession.api_call_count,
           }
         : null;
 
@@ -110,6 +132,19 @@ export function TrustSync() {
       if (p.anomalies) {
         ts.setAnomalies(p.anomalies);
       }
+      ts.setModelState({
+        modelScore: p.model_score,
+        modelRisk: p.model_risk,
+        modelConfidence: p.model_confidence,
+        modelAction: p.model_action,
+        modelName: p.model_name,
+        modelVersion: p.model_version,
+        modelLoaded: p.model_loaded,
+        modelReasons: p.model_reasons,
+        telemetryState: p.telemetry_state,
+        recentResources: p.recent_resources,
+        apiCallCount: p.api_call_count,
+      });
 
       if (p.needs_passkey && !p.passkey_verified && p.passkey_due_at) {
         const dueMs = new Date(p.passkey_due_at).getTime();

@@ -179,6 +179,8 @@ async def login(request: LoginRequest):
         location_override=request.mock_location,
         ip_status=request.mock_ip_status or "CLEAN",
     )
+    if request.device_context:
+        trust_engine.update_session_device_context(session_id, request.device_context.model_dump())
 
     token_data = {
         "sub": user.id,

@@ -54,16 +54,29 @@ class User(BaseModel):
     restriction_reason: Optional[str] = None
 
 
+class DeviceContext(BaseModel):
+    fingerprint: str = ""
+    user_agent: str = ""
+    platform: str = ""
+    language: str = ""
+    timezone: str = ""
+    screen_width: int = 0
+    screen_height: int = 0
+    hardware_concurrency: int = 0
+    network_type: str = "unknown"
+    route: str = ""
+
+
 class Session(BaseModel):
     session_id: str
     user_id: str
     user: Optional[User] = None
     ip_address: str = "127.0.0.1"
     ip_status: str = "CLEAN"
-    location: dict = {"city": "Unknown", "country": "Unknown", "lat": 0.0, "lon": 0.0}
+    location: dict = Field(default_factory=lambda: {"city": "Unknown", "country": "Unknown", "lat": 0.0, "lon": 0.0})
     trust_score: int = 100
     baseline_score: int = 100
-    anomalies: List[str] = []
+    anomalies: List[str] = Field(default_factory=list)
     is_compromised: bool = False
     access_level: str = "full"
     last_updated: str = ""
@@ -83,6 +96,18 @@ class Session(BaseModel):
     admin_recovery_required: bool = False
     admin_recovery_status: Optional[str] = None
     admin_recovery_request_id: Optional[str] = None
+    model_score: int = 50
+    model_risk: int = 50
+    model_confidence: float = 0.0
+    model_action: str = "allow"
+    model_name: str = "builtin_behavior_adapter"
+    model_version: str = "builtin"
+    model_loaded: bool = False
+    model_reasons: List[str] = Field(default_factory=list)
+    device_context: DeviceContext = Field(default_factory=DeviceContext)
+    telemetry_state: dict = Field(default_factory=dict)
+    recent_resources: List[str] = Field(default_factory=list)
+    api_call_count: int = 0
 
 
 class SessionTrustState(BaseModel):
@@ -118,6 +143,7 @@ class LoginRequest(BaseModel):
     mock_ip_status: Optional[str] = None
     mock_signal: Optional[str] = None
     mock_location: Optional[dict] = None
+    device_context: Optional[DeviceContext] = None
 
 
 class LoginResponse(BaseModel):
@@ -196,3 +222,36 @@ class GeoAnalyzeRequest(BaseModel):
     new_lat: float
     new_lon: float
     time_elapsed_minutes: float
+
+
+class BehaviorTelemetryRequest(BaseModel):
+    route: str
+    resource: Optional[str] = None
+    page_label: Optional[str] = None
+    interval_ms: int = 0
+    key_events: int = 0
+    key_hold_mean_ms: float = 0.0
+    key_flight_mean_ms: float = 0.0
+    typing_speed_cpm: float = 0.0
+    mouse_events: int = 0
+    mouse_distance: float = 0.0
+    mouse_velocity_mean: float = 0.0
+    mouse_curve_ratio: float = 0.0
+    click_count: int = 0
+    scroll_events: int = 0
+    scroll_distance: float = 0.0
+    api_calls: int = 0
+    resources: List[str] = Field(default_factory=list)
+    privilege_escalation_attempts: int = 0
+    data_volume_read: float = 0.0
+    data_volume_written: float = 0.0
+    device_context: Optional[DeviceContext] = None
+
+
+class RuntimeAccessRequest(BaseModel):
+    route: str
+    resource: str
+    action: str
+    data_volume_read: float = 0.0
+    data_volume_written: float = 0.0
+    privileged: bool = False

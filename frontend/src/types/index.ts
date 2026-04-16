@@ -22,6 +22,19 @@ export interface User {
   restriction_reason?: string | null;
 }
 
+export interface DeviceContext {
+  fingerprint: string;
+  user_agent: string;
+  platform: string;
+  language: string;
+  timezone: string;
+  screen_width: number;
+  screen_height: number;
+  hardware_concurrency: number;
+  network_type: string;
+  route: string;
+}
+
 export interface Session {
   session_id: string;
   user_id: string;
@@ -55,6 +68,18 @@ export interface Session {
   admin_recovery_required?: boolean;
   admin_recovery_status?: string | null;
   admin_recovery_request_id?: string | null;
+  model_score?: number;
+  model_risk?: number;
+  model_confidence?: number;
+  model_action?: string;
+  model_name?: string;
+  model_version?: string;
+  model_loaded?: boolean;
+  model_reasons?: string[];
+  telemetry_state?: Record<string, unknown>;
+  recent_resources?: string[];
+  api_call_count?: number;
+  device_context?: DeviceContext;
 }
 
 export interface TrustSignal {

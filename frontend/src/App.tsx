@@ -1,6 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/authStore';
 import { AuthBootstrap } from './components/AuthBootstrap';
+import { BehaviorMonitor } from './components/BehaviorMonitor';
+import { RLStatusOverlay } from './components/RLStatusOverlay';
 import { SecurityOverlay } from './components/SecurityOverlay';
 import { TrustSync } from './components/TrustSync';
 import PasskeyChallenge from './components/auth/PasskeyChallenge';
@@ -59,6 +61,8 @@ export default function App() {
     <BrowserRouter>
       <AuthBootstrap />
       <TrustSync />
+      <BehaviorMonitor />
+      <RLStatusOverlay />
       <SecurityOverlay />
       <PasskeyChallenge />
       <CameraChallengeBanner />

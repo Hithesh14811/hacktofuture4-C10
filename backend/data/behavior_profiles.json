@@ -1,0 +1,70 @@
+{
+  "usr_002": {
+    "samples": 194,
+    "metrics": {
+      "typing_speed_cpm": {
+        "mean": 0.3678036667735861,
+        "count": 194,
+        "m2": 1244.3869231095157
+      },
+      "key_hold_mean_ms": {
+        "mean": 1.252302405528749,
+        "count": 194,
+        "m2": 19585.382816999845
+      },
+      "key_flight_mean_ms": {
+        "mean": 2.5032474226788755,
+        "count": 194,
+        "m2": 116785.41485398426
+      },
+      "mouse_velocity_mean": {
+        "mean": 0.29631493243918267,
+        "count": 194,
+        "m2": 52.53987051129633
+      },
+      "mouse_curve_ratio": {
+        "mean": 0.04612787775436592,
+        "count": 194,
+        "m2": 1.3058344395950383
+      },
+      "scroll_distance": {
+        "mean": 0.0,
+        "count": 194,
+        "m2": 0.0
+      },
+      "click_count": {
+        "mean": 0.5721649484536081,
+        "count": 194,
+        "m2": 539.4896907216493
+      }
+    },
+    "routes": {
+      "/dashboard": 22,
+      "/dashboard/secrets": 44,
+      "/dashboard/services": 28,
+      "/dashboard/incident": 63,
+      "/verify/face": 13,
+      "/dashboard/logs": 24
+    },
+    "resources": {
+      "dashboard": 37,
+      "secrets": 44,
+      "services": 28,
+      "iam": 62,
+      "logs": 23
+    },
+    "hours": {
+      "0": 194
+    },
+    "devices": {
+      "fp_1792042887": 194
+    },
+    "screen_profiles": {
+      "1440x900": 194
+    },
+    "timezones": {
+      "Asia/Calcutta": 194
+    },
+    "last_updated": "2026-04-17T00:54:25.166507"
+  }
+}

@@ -1,1 +1,1 @@
-from . import auth, trust, face, admin, blast_radius, remediation, analyze
+from . import auth, trust, face, admin, blast_radius, remediation, analyze, telemetry
