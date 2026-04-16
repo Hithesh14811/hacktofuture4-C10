@@ -155,7 +155,7 @@ export function TopBar() {
       <div className="flex items-center gap-6">
         <div className="flex items-center gap-2">
           <Cloud className="w-5 h-5 text-[#ffb347]" />
-          <span className="font-bold text-lg text-white tracking-tight">NimbusCloud <span className="text-[#7cc4ff]">Console</span></span>
+          <span className="font-bold text-lg text-white tracking-tight">AgenticZero <span className="text-[#7cc4ff]">Console</span></span>
         </div>
         
         <div className="hidden md:flex items-center gap-4 ml-4">
