@@ -41,13 +41,14 @@ export function SecurityOverlay() {
 
   const state = useMemo(() => {
     if (!session || !isAuthenticated || isPublicRoute) return null;
-    const isBlocked =
-      session.access_level === 'blocked' ||
+    const awaitingFaceVerification = requiredVerification === 'face';
+    const isHardBlocked =
       restrictionReason === 'passkey_failed' ||
       restrictionReason === 'restricted_identity' ||
-      adminRecoveryRequired;
+      adminRecoveryRequired ||
+      (session.access_level === 'blocked' && !awaitingFaceVerification);
 
-    if (requiredVerification === 'face' && location.pathname !== '/verify/face' && !isBlocked) {
+    if (awaitingFaceVerification && location.pathname !== '/verify/face') {
       return {
         tone: 'amber',
         title: 'Face verification required',
@@ -59,7 +60,7 @@ export function SecurityOverlay() {
     }
 
     if (
-      isBlocked
+      isHardBlocked
     ) {
       return {
         tone: 'red',

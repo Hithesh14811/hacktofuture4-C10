@@ -600,8 +600,8 @@
       0.037443067878484726
     ],
     "last_face_enrollment": "2026-04-16T10:10:48.127056",
-    "account_restricted": false,
-    "restriction_reason": null
+    "account_restricted": true,
+    "restriction_reason": "restricted_identity"
   },
   {
     "id": "usr_005",

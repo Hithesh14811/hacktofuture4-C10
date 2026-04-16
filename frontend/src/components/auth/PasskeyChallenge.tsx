@@ -49,7 +49,19 @@ export default function PasskeyChallenge({ reason = 'Unusual activity detected â
       const data = await res.json();
       if (data.verified) {
         if (data.requires_camera) {
+          setBlockState({
+            blockMessage:
+              data.block_message || 'Please proceed with face verification to continue using the application.',
+            restrictionReason: null,
+            requiredVerification: 'face',
+          });
           setCameraChallengeOpen(true);
+        } else {
+          setBlockState({
+            blockMessage: null,
+            restrictionReason: null,
+            requiredVerification: null,
+          });
         }
         close();
       } else {
